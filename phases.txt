@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phases: Robust Editor</title>
+    <title>Phases: Comment Support</title>
     <style>
         :root {
             /* Dark Theme Variables */
@@ -210,7 +210,7 @@
         /* Handles \n in JSON strings safely */
         .node-label { 
             font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px; line-height: 1.2; 
-            white-space: pre-line; /* Key for handling newline chars */
+            white-space: pre-line;
         }
 
         /* Step Badge Container inside Node */
@@ -321,34 +321,43 @@
         default: '<path d="M3 3h18v18H3z"/>'
     };
 
-    const defaultData = {
-        "title": "Phase 1: Introducing AI Agents",
-        "nodes": [
-            { "id": "u", "type": "user", "tag": "external", "label": "Customer", "x": 60, "y": 250, "w": 100, "h": 70 },
-            { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80 },
-            { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
-            { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\nAgent", "x": 500, "y": 120, "w": 110, "h": 70 },
-            { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\nService", "x": 750, "y": 120, "w": 120, "h": 80 },
-            { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
-            { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\nCache", "x": 950, "y": 120, "w": 100, "h": 70 }
-        ],
-        "connections": [
-            { "from": "u", "to": "fe" },
-            { "from": "fe", "to": "mono" },
-            { "from": "fe", "to": "agent" },
-            { "from": "agent", "to": "new_svc" },
-            { "from": "mono", "to": "db_main" },
-            { "from": "new_svc", "to": "db_cache" }
-        ],
-        "sequence": [
-            { "from": "u", "to": "fe", "text": "User places order" },
-            { "from": "fe", "to": "agent", "text": "Agent classifies request" },
-            { "from": "agent", "to": "new_svc", "text": "Route to Microservice" },
-            { "from": "new_svc", "to": "db_cache", "text": "Check Inventory" },
-            { "from": "db_cache", "to": "new_svc", "text": "Stock Confirmed" },
-            { "from": "new_svc", "to": "fe", "text": "Order Success" }
-        ]
-    };
+    // Note: We use a string template here so we can include comments in the default load!
+    const defaultDataString = `{
+    "title": "Phase 1: Introducing AI Agents",
+    // Nodes define the boxes
+    "nodes": [
+        { "id": "u", "type": "user", "tag": "external", "label": "Customer", "x": 60, "y": 250, "w": 100, "h": 70 },
+        { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80 },
+        
+        // This is our legacy system we are trying to replace
+        { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
+        
+        { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\\nAgent", "x": 500, "y": 120, "w": 110, "h": 70 },
+        { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\\nService", "x": 750, "y": 120, "w": 120, "h": 80 },
+        
+        /* Databases */
+        { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
+        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\nCache", "x": 950, "y": 120, "w": 100, "h": 70 }
+    ],
+    // Connections draw the lines
+    "connections": [
+        { "from": "u", "to": "fe" },
+        { "from": "fe", "to": "mono" },
+        { "from": "fe", "to": "agent" },
+        { "from": "agent", "to": "new_svc" },
+        { "from": "mono", "to": "db_main" },
+        { "from": "new_svc", "to": "db_cache" }
+    ],
+    // Sequence defines the animation path
+    "sequence": [
+        { "from": "u", "to": "fe", "text": "User places order" },
+        { "from": "fe", "to": "agent", "text": "Agent classifies request" },
+        { "from": "agent", "to": "new_svc", "text": "Route to Microservice" },
+        { "from": "new_svc", "to": "db_cache", "text": "Check Inventory" },
+        { "from": "db_cache", "to": "new_svc", "text": "Stock Confirmed" },
+        { "from": "new_svc", "to": "fe", "text": "Order Success" }
+    ]
+}`;
 
     // --- State ---
     const dom = {
@@ -379,15 +388,31 @@
     let nodeMap = {};
 
     function init() {
-        dom.input.value = JSON.stringify(defaultData, null, 4);
+        // Load the string directly so we preserve comments on first load
+        dom.input.value = defaultDataString;
         render();
         clearLog();
+    }
+
+    /**
+     * Regex to strip JSON comments (C-style) while preserving strings.
+     * Captures:
+     * 1. Escaped quotes \"
+     * 2. String literals "..."
+     * 3. Single line comments //...
+     * 4. Multi line comments /* ... */
+     */
+    function stripJsonComments(jsonStr) {
+        return jsonStr.replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (m, g) => g ? "" : m);
     }
 
     // --- Render with Error Handling ---
     function render() {
         try {
-            const raw = JSON.parse(dom.input.value);
+            // 1. Strip comments
+            const cleanJson = stripJsonComments(dom.input.value);
+            // 2. Parse
+            const raw = JSON.parse(cleanJson);
             graph = raw;
             
             // Success State
@@ -413,9 +438,6 @@
                 
                 const iconSvg = ICONS[n.type] || ICONS.default;
                 
-                // Safe Label Rendering (handles entities)
-                // We use textContent for label to prevent HTML injection, 
-                // but style has white-space: pre-line so \n works.
                 el.innerHTML = `
                     <div class="node-content-wrapper">
                         <svg class="node-icon" viewBox="0 0 24 24">${iconSvg}</svg>
@@ -424,6 +446,7 @@
                     <div class="step-badges-container" id="badges-${n.id}"></div>
                 `;
                 
+                // Safe text insertion
                 el.querySelector('.node-label').textContent = n.label || "";
                 
                 el.addEventListener('mousedown', handleDragStart);
@@ -526,7 +549,7 @@
             if(nodeItem) {
                 nodeItem.x = parseInt(dragTarget.style.left);
                 nodeItem.y = parseInt(dragTarget.style.top);
-                // SAFE UPDATE: JSON.stringify handles escaping correctly
+                // Note: Updating from drag destroys comments as we must regenerate JSON
                 dom.input.value = JSON.stringify(graph, null, 4);
             }
         }
