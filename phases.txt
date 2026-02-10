@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phases: Architecture Animator</title>
+    <style>
+        :root {
+            /* Dark Theme Variables */
+            --bg-color: #1e1e1e;
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --panel-bg: #252526;
+            --border-color: #3e3e42;
+            --text-main: #d4d4d4;
+            --accent-color: #007acc;
+            --highlight: #17a2b8;
+
+            /* Node Tag Colors */
+            --tag-legacy-bg: #4a1818; --tag-legacy-border: #e74c3c;
+            --tag-new-bg: #144226; --tag-new-border: #2ecc71;
+            --tag-core-bg: #154360; --tag-core-border: #3498db;
+            --tag-agent-bg: #4a235a; --tag-agent-border: #9b59b6;
+            --tag-external-bg: #34495e; --tag-external-border: #7f8c8d;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Toolbar --- */
+        header {
+            background: #2d2d2d;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 20px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .brand { font-weight: 700; font-size: 1.2rem; letter-spacing: 1px; color: #fff; text-transform: uppercase; }
+        .brand span { color: var(--highlight); }
+
+        .controls-group { display: flex; align-items: center; gap: 15px; }
+        .divider { width: 1px; height: 24px; background: #555; margin: 0 10px; }
+
+        button {
+            background: var(--accent-color);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        button:hover { filter: brightness(1.2); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        label.toggle-label { font-size: 0.85rem; display: flex; align-items: center; gap: 6px; color: #ccc; cursor: pointer; user-select: none; }
+        input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
+        input[type="number"] { width: 40px; padding: 4px; border-radius: 3px; border: 1px solid #555; background: #333; color: white; }
+
+        /* --- Main Layout --- */
+        main { display: flex; flex: 1; height: calc(100vh - 50px); overflow: hidden; }
+
+        /* Left Pane: Editor */
+        #editor-pane {
+            width: 30%; min-width: 300px;
+            display: flex; flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            background: var(--panel-bg);
+            transition: transform 0.3s ease;
+            z-index: 50;
+        }
+        #editor-pane.hidden { display: none; }
+
+        .editor-toolbar { padding: 10px; background: #252526; border-bottom: 1px solid #333; display: flex; justify-content: flex-end; }
+        textarea {
+            flex: 1; width: 100%; border: none; padding: 20px;
+            font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5;
+            background: #1e1e1e; color: #dcdcaa; resize: none; outline: none; box-sizing: border-box;
+        }
+
+        /* Right Pane: Container for Canvas + Log */
+        #right-pane-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 1. Preview Canvas */
+        #preview-canvas {
+            flex: 1; /* Takes remaining space */
+            position: relative;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
+            background-size: 25px 25px;
+            overflow: hidden;
+            min-height: 200px;
+        }
+
+        /* 2. Resizer Handle */
+        #pane-resizer {
+            height: 8px;
+            background: #2d2d2d;
+            border-top: 1px solid #3e3e42;
+            border-bottom: 1px solid #3e3e42;
+            cursor: ns-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 60;
+        }
+        #pane-resizer::after {
+            content: ''; width: 40px; height: 2px; background: #555; border-radius: 2px;
+        }
+        #pane-resizer:hover { background: #3e3e42; }
+
+        /* 3. Log Pane */
+        #log-pane {
+            height: 180px; /* Default Height */
+            background: #1e1e1e;
+            color: #ccc;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .log-entry {
+            padding: 6px 15px;
+            border-bottom: 1px solid #2d2d2d;
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+        .log-entry:hover { background: #2a2d2e; }
+        .log-step { color: var(--highlight); font-weight: bold; min-width: 60px; }
+        .log-text { color: #d4d4d4; }
+        .log-time { color: #666; margin-left: auto; font-size: 0.8em; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Phase Title */
+        #phase-display {
+            position: absolute; top: 20px; left: 20px;
+            font-size: 1.5rem; font-weight: 300; color: rgba(255,255,255,0.8);
+            text-transform: uppercase; letter-spacing: 2px; pointer-events: none;
+            z-index: 5; border-left: 4px solid var(--accent-color); padding-left: 15px;
+        }
+
+        /* SVG & Nodes */
+        svg.connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        path.connector { fill: none; stroke: #666; stroke-width: 2; stroke-dasharray: 6,4; opacity: 0.6; }
+
+        .node {
+            position: absolute; display: flex; flex-direction: column;
+            justify-content: flex-start; /* Align top so content grows down */
+            align-items: center; text-align: center;
+            border: 2px solid #555; border-radius: 6px; background: #2d2d2d;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: default;
+            user-select: none; padding: 8px; box-sizing: border-box; z-index: 10;
+            transition: border-color 0.2s;
+        }
+
+        body.is-editing .node { cursor: grab; }
+        body.is-editing .node:active { cursor: grabbing; border-color: var(--highlight); }
+
+        .node-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            width: 100%;
+        }
+
+        .node-icon { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; opacity: 0.9; }
+        .node-label { font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px; line-height: 1.2; }
+
+        /* Step Badge Container inside Node */
+        .step-badges-container {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+            margin-top: auto; /* Push to bottom */
+            padding-top: 4px;
+            min-height: 18px; /* Reserve space */
+        }
+
+        /* The actual step number circle */
+        .step-badge {
+            width: 16px; height: 16px;
+            background: var(--highlight);
+            color: #1e1e1e;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Tag Styles */
+        .node.tag-legacy { background: var(--tag-legacy-bg); border-color: var(--tag-legacy-border); color: #ecf0f1; }
+        .node.tag-new { background: var(--tag-new-bg); border-color: var(--tag-new-border); color: #ecf0f1; }
+        .node.tag-core { background: var(--tag-core-bg); border-color: var(--tag-core-border); color: #ecf0f1; }
+        .node.tag-agent { background: var(--tag-agent-bg); border-color: var(--tag-agent-border); color: #ecf0f1; }
+        .node.tag-external { background: var(--tag-external-bg); border-color: var(--tag-external-border); color: #bdc3c7; border-style: dashed; }
+        .node.type-database { border-radius: 0 0 12px 12px; border-top-width: 4px; }
+
+        /* Animation Elements */
+        .message-particle {
+            position: absolute; width: 12px; height: 12px; background: #00ffcc;
+            border-radius: 50%; z-index: 30; box-shadow: 0 0 10px #00ffcc;
+            display: none; pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">Phases</div>
+
+    <div style="display:flex;">
+        <div class="controls-group">
+            <button id="btn-play">▶ Play</button>
+            <button id="btn-next" disabled>Next ⏭</button>
+            <label class="toggle-label"><input type="checkbox" id="chk-pause"> Pause/Step</label>
+            <label class="toggle-label">Delay: <input type="number" id="inp-delay" value="1.5" step="0.5" min="0.5">s</label>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="controls-group">
+            <label class="toggle-label" style="color:var(--highlight)">
+                <input type="checkbox" id="chk-edit-mode"> Enable Editing
+            </label>
+            <label class="toggle-label">
+                <input type="checkbox" id="chk-show-editor"> Show Editor
+            </label>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div id="editor-pane" class="hidden">
+        <div class="editor-toolbar">
+            <button id="btn-update">Update Diagram</button>
+        </div>
+        <textarea id="json-input" spellcheck="false"></textarea>
+    </div>
+
+    <div id="right-pane-container">
+
+        <div id="preview-canvas">
+            <div id="phase-display"></div>
+            <svg class="connections-layer" id="connections-layer"></svg>
+            <div id="nodes-container"></div>
+            <div id="particle" class="message-particle"></div>
+        </div>
+
+        <div id="pane-resizer"></div>
+
+        <div id="log-pane">
+            <div class="log-entry" style="color:#666; font-style:italic;">Ready...</div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // --- Icons ---
+    const ICONS = {
+        user: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
+        database: '<path d="M12 2C6.48 2 2 3.34 2 5v14c0 1.66 4.48 3 10 3s10-1.34 10-3V5c0-1.66-4.48-3-10-3zm0 12c-3.53 0-6.43-.85-7.85-2.09C5.36 13.56 8.44 14.5 12 14.5s6.64-.94 7.85-2.59c-1.42 1.24-4.32 2.09-7.85 2.09z"/>',
+        service: '<path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2-1-10 5-2-1 10-5zm0 2.5l2-1-10 5-2-1 10-5z"/>',
+        agent: '<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1c1.1 0 2 .9 2 2v6h2v2h-2v2c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2v-2H4v-2h2V9c0-1.1.9-2 2-2h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M9 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2m6 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>',
+        default: '<path d="M3 3h18v18H3z"/>'
+    };
+
+    const defaultData = {
+        "title": "Phase 1: Introducing AI Agents",
+        "nodes": [
+            { "id": "u", "type": "user", "tag": "external", "label": "Customer", "x": 60, "y": 250, "w": 100, "h": 70 },
+            { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80 },
+            { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy Monolith", "x": 500, "y": 380, "w": 140, "h": 90 },
+            { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage Agent", "x": 500, "y": 120, "w": 110, "h": 70 },
+            { "id": "new_svc", "type": "service", "tag": "new", "label": "Order Service", "x": 750, "y": 120, "w": 120, "h": 80 },
+            { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
+            { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis Cache", "x": 950, "y": 120, "w": 100, "h": 70 }
+        ],
+        "connections": [
+            { "from": "u", "to": "fe" },
+            { "from": "fe", "to": "mono" },
+            { "from": "fe", "to": "agent" },
+            { "from": "agent", "to": "new_svc" },
+            { "from": "mono", "to": "db_main" },
+            { "from": "new_svc", "to": "db_cache" }
+        ],
+        "sequence": [
+            { "from": "u", "to": "fe", "text": "User places order" },
+            { "from": "fe", "to": "agent", "text": "Agent classifies request" },
+            { "from": "agent", "to": "new_svc", "text": "Route to Microservice" },
+            { "from": "new_svc", "to": "db_cache", "text": "Check Inventory" },
+            { "from": "db_cache", "to": "new_svc", "text": "Stock Confirmed" },
+            { "from": "new_svc", "to": "fe", "text": "Order Success" }
+        ]
+    };
+
+    // --- State ---
+    const dom = {
+        input: document.getElementById('json-input'),
+        container: document.getElementById('nodes-container'),
+        svgLayer: document.getElementById('connections-layer'),
+        particle: document.getElementById('particle'),
+        title: document.getElementById('phase-display'),
+        editorPane: document.getElementById('editor-pane'),
+        logPane: document.getElementById('log-pane'),
+
+        // Controls
+        btnPlay: document.getElementById('btn-play'),
+        btnNext: document.getElementById('btn-next'),
+        btnUpdate: document.getElementById('btn-update'),
+        chkPause: document.getElementById('chk-pause'),
+        inpDelay: document.getElementById('inp-delay'),
+        chkEditMode: document.getElementById('chk-edit-mode'),
+        chkShowEditor: document.getElementById('chk-show-editor'),
+        resizer: document.getElementById('pane-resizer')
+    };
+
+    let graph = {};
+    let isPlaying = false;
+    let stepIndex = 0;
+    let timer = null;
+    let nodeMap = {};
+
+    function init() {
+        dom.input.value = JSON.stringify(defaultData, null, 4);
+        render();
+        clearLog();
+    }
+
+    // --- Render ---
+    function render() {
+        try {
+            const raw = JSON.parse(dom.input.value);
+            graph = raw;
+            nodeMap = {};
+
+            dom.title.innerText = graph.title || "";
+            dom.container.innerHTML = '';
+
+            (graph.nodes || []).forEach(n => {
+                const el = document.createElement('div');
+                el.className = `node type-${n.type || 'default'} tag-${n.tag || 'core'}`;
+                el.id = `node-${n.id}`;
+
+                // Geometry
+                el.style.left = `${n.x}px`;
+                el.style.top = `${n.y}px`;
+                // Use specified width/height or default
+                el.style.width = n.w ? `${n.w}px` : '100px';
+                el.style.height = n.h ? `${n.h}px` : 'auto';
+
+                const iconSvg = ICONS[n.type] || ICONS.default;
+
+                // Add label + container for step badges
+                el.innerHTML = `
+                    <div class="node-content-wrapper">
+                        <svg class="node-icon" viewBox="0 0 24 24">${iconSvg}</svg>
+                        <div class="node-label">${n.label}</div>
+                    </div>
+                    <div class="step-badges-container" id="badges-${n.id}"></div>
+                `;
+
+                el.addEventListener('mousedown', handleDragStart);
+                dom.container.appendChild(el);
+                nodeMap[n.id] = { ...n, el };
+            });
+
+            updateConnections();
+            resetAnimation(true);
+
+        } catch (e) {
+            console.error(e);
+            alert("JSON Error: " + e.message);
+        }
+    }
+
+    function updateConnections() {
+        dom.svgLayer.innerHTML = '';
+        if (!graph.connections) return;
+        graph.connections.forEach(conn => {
+            const n1 = nodeMap[conn.from];
+            const n2 = nodeMap[conn.to];
+            if (n1 && n2) {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("class", "connector");
+                const x1 = parseInt(n1.el.style.left) + n1.el.offsetWidth / 2;
+                const y1 = parseInt(n1.el.style.top) + n1.el.offsetHeight / 2;
+                const x2 = parseInt(n2.el.style.left) + n2.el.offsetWidth / 2;
+                const y2 = parseInt(n2.el.style.top) + n2.el.offsetHeight / 2;
+                path.setAttribute("d", `M${x1},${y1} L${x2},${y2}`);
+                dom.svgLayer.appendChild(path);
+            }
+        });
+    }
+
+    // --- UI Logic ---
+    dom.chkEditMode.addEventListener('change', (e) => {
+        document.body.classList.toggle('is-editing', e.target.checked);
+    });
+
+    dom.chkShowEditor.addEventListener('change', (e) => {
+        if(e.target.checked) dom.editorPane.classList.remove('hidden');
+        else dom.editorPane.classList.add('hidden');
+    });
+
+    // --- Resizer Logic ---
+    let isResizing = false;
+    dom.resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        document.addEventListener('mousemove', handleResize);
+        document.addEventListener('mouseup', stopResize);
+        document.body.style.cursor = 'ns-resize';
+    });
+
+    function handleResize(e) {
+        if (!isResizing) return;
+        const containerRect = document.getElementById('right-pane-container').getBoundingClientRect();
+        const newHeight = containerRect.bottom - e.clientY;
+        if (newHeight > 50 && newHeight < containerRect.height - 100) {
+            dom.logPane.style.height = `${newHeight}px`;
+        }
+    }
+
+    function stopResize() {
+        isResizing = false;
+        document.removeEventListener('mousemove', handleResize);
+        document.removeEventListener('mouseup', stopResize);
+        document.body.style.cursor = '';
+    }
+
+    // --- Drag Logic ---
+    let dragTarget = null, dragOffset = {x:0, y:0};
+    function handleDragStart(e) {
+        if (!dom.chkEditMode.checked || isPlaying) return;
+        dragTarget = e.currentTarget;
+        const r = dragTarget.getBoundingClientRect();
+        dragOffset.x = e.clientX - r.left;
+        dragOffset.y = e.clientY - r.top;
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('mouseup', handleDragEnd);
+    }
+    function handleDragMove(e) {
+        if (!dragTarget) return;
+        const cRect = document.getElementById('preview-canvas').getBoundingClientRect();
+        let nx = e.clientX - cRect.left - dragOffset.x;
+        let ny = e.clientY - cRect.top - dragOffset.y;
+        nx = Math.round(nx/10)*10; ny = Math.round(ny/10)*10;
+        dragTarget.style.left = `${nx}px`;
+        dragTarget.style.top = `${ny}px`;
+        updateConnections();
+    }
+    function handleDragEnd() {
+        if (dragTarget) {
+            const id = dragTarget.id.replace('node-', '');
+            const nodeItem = graph.nodes.find(n => n.id === id);
+            if(nodeItem) {
+                nodeItem.x = parseInt(dragTarget.style.left);
+                nodeItem.y = parseInt(dragTarget.style.top);
+                dom.input.value = JSON.stringify(graph, null, 4);
+            }
+        }
+        dragTarget = null;
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+    }
+
+    // --- Logging & Badges ---
+    function clearLog() {
+        dom.logPane.innerHTML = '<div class="log-entry" style="color:#666; font-style:italic;">Ready...</div>';
+    }
+
+    function clearBadges() {
+        document.querySelectorAll('.step-badge').forEach(el => el.remove());
+    }
+
+    function addStepBadge(nodeId, stepNum) {
+        const container = document.getElementById(`badges-${nodeId}`);
+        if(container) {
+            const badge = document.createElement('div');
+            badge.className = 'step-badge';
+            badge.innerText = stepNum;
+            container.appendChild(badge);
+        }
+    }
+
+    function appendLog(stepNum, text) {
+        if(dom.logPane.children[0] && dom.logPane.children[0].innerText.includes("Ready")) {
+            dom.logPane.innerHTML = '';
+        }
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        const timeStr = new Date().toLocaleTimeString().split(' ')[0];
+        div.innerHTML = `<span class="log-step">Step ${stepNum}</span><span class="log-text">${text}</span><span class="log-time">${timeStr}</span>`;
+        dom.logPane.appendChild(div);
+        dom.logPane.scrollTop = dom.logPane.scrollHeight;
+    }
+
+    // --- Animation ---
+    function resetAnimation(fullReset = false) {
+        clearTimeout(timer);
+        isPlaying = false;
+        stepIndex = 0;
+        dom.particle.style.display = 'none';
+        dom.btnNext.disabled = true;
+        dom.btnPlay.innerHTML = "▶ Play";
+
+        if (fullReset) {
+            clearLog();
+            clearBadges();
+        }
+    }
+
+    function togglePlay() {
+        if (isPlaying) {
+            clearTimeout(timer);
+            isPlaying = false;
+            dom.btnPlay.innerHTML = "▶ Resume";
+        } else {
+            // Auto-reset if starting from beginning
+            if (stepIndex === 0) {
+                clearLog();
+                clearBadges();
+            }
+
+            // Replay
+            if (stepIndex >= (graph.sequence || []).length) {
+                stepIndex = 0;
+                clearLog();
+                clearBadges();
+            }
+
+            isPlaying = true;
+            dom.btnPlay.innerHTML = "⏸ Pause";
+            runSequence();
+        }
+    }
+
+    function runSequence() {
+        if (!isPlaying) return;
+        const seq = graph.sequence || [];
+        if (stepIndex >= seq.length) {
+            isPlaying = false;
+            dom.btnPlay.innerHTML = "↺ Replay";
+            return;
+        }
+
+        const step = seq[stepIndex];
+        animateStep(step, stepIndex + 1, () => {
+            stepIndex++;
+            if (dom.chkPause.checked) {
+                isPlaying = false;
+                dom.btnPlay.innerHTML = "▶ Resume";
+                dom.btnNext.disabled = false;
+            } else {
+                const delay = parseFloat(dom.inpDelay.value) * 1000;
+                timer = setTimeout(runSequence, delay);
+            }
+        });
+    }
+
+    function animateStep(step, stepNum, cb) {
+        const n1 = nodeMap[step.from];
+        const n2 = nodeMap[step.to];
+        if (!n1 || !n2) { cb(); return; }
+
+        const p = dom.particle;
+        const x1 = parseInt(n1.el.style.left) + n1.el.offsetWidth/2;
+        const y1 = parseInt(n1.el.style.top) + n1.el.offsetHeight/2;
+        const x2 = parseInt(n2.el.style.left) + n2.el.offsetWidth/2;
+        const y2 = parseInt(n2.el.style.top) + n2.el.offsetHeight/2;
+
+        p.style.display = 'block';
+        p.style.transition = 'none';
+        p.style.left = (x1 - 6) + 'px';
+        p.style.top = (y1 - 6) + 'px';
+
+        void p.offsetWidth; // Reflow
+
+        p.style.transition = 'all 1s ease-in-out';
+        p.style.left = (x2 - 6) + 'px';
+        p.style.top = (y2 - 6) + 'px';
+
+        setTimeout(() => {
+            // 1. Add Badge to Target Box
+            addStepBadge(step.to, stepNum);
+
+            // 2. Add Log Entry
+            appendLog(stepNum, step.text);
+
+            cb();
+        }, 1000);
+    }
+
+    dom.btnUpdate.onclick = () => { render(); resetAnimation(true); };
+    dom.btnPlay.onclick = togglePlay;
+    dom.btnNext.onclick = () => {
+        dom.btnNext.disabled = true;
+        togglePlay();
+    };
+
+    init();
+
+</script>
+</body>
+</html>
