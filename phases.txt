@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phases: Comment Support</title>
+    <title>Phases: Architecture Animator</title>
     <style>
         :root {
             /* Dark Theme Variables */
@@ -321,8 +321,41 @@
         default: '<path d="M3 3h18v18H3z"/>'
     };
 
-    // Note: We use a string template here so we can include comments in the default load!
-    const defaultDataString = `{
+    // Safe Loading Strategy:
+    // 1. Define Valid JS Object for fallback
+    // 2. Define String with comments for Editor
+    const safeData = {
+        "title": "Phase 1: Introducing AI Agents",
+        "nodes": [
+            { "id": "u", "type": "user", "tag": "external", "label": "Customer", "x": 60, "y": 250, "w": 100, "h": 70 },
+            { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80 },
+            { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
+            { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\nAgent", "x": 500, "y": 120, "w": 110, "h": 70 },
+            { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\nService", "x": 750, "y": 120, "w": 120, "h": 80 },
+            { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
+            { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\nCache", "x": 950, "y": 120, "w": 100, "h": 70 }
+        ],
+        "connections": [
+            { "from": "u", "to": "fe" },
+            { "from": "fe", "to": "mono" },
+            { "from": "fe", "to": "agent" },
+            { "from": "agent", "to": "new_svc" },
+            { "from": "mono", "to": "db_main" },
+            { "from": "new_svc", "to": "db_cache" }
+        ],
+        "sequence": [
+            { "from": "u", "to": "fe", "text": "User places order" },
+            { "from": "fe", "to": "agent", "text": "Agent classifies request" },
+            { "from": "agent", "to": "new_svc", "text": "Route to Microservice" },
+            { "from": "new_svc", "to": "db_cache", "text": "Check Inventory" },
+            { "from": "db_cache", "to": "new_svc", "text": "Stock Confirmed" },
+            { "from": "new_svc", "to": "fe", "text": "Order Success" }
+        ]
+    };
+
+    // The string version for the editor (with comments and correct escaping for textarea)
+    // Note double backslash for newlines inside the label strings
+    const editorString = `{
     "title": "Phase 1: Introducing AI Agents",
     // Nodes define the boxes
     "nodes": [
@@ -330,14 +363,14 @@
         { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80 },
         
         // This is our legacy system we are trying to replace
-        { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
+        { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\\\\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
         
-        { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\\nAgent", "x": 500, "y": 120, "w": 110, "h": 70 },
-        { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\\nService", "x": 750, "y": 120, "w": 120, "h": 80 },
+        { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\\\\nAgent", "x": 500, "y": 120, "w": 110, "h": 70 },
+        { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\\\\nService", "x": 750, "y": 120, "w": 120, "h": 80 },
         
         /* Databases */
         { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
-        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\nCache", "x": 950, "y": 120, "w": 100, "h": 70 }
+        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\\\nCache", "x": 950, "y": 120, "w": 100, "h": 70 }
     ],
     // Connections draw the lines
     "connections": [
@@ -369,8 +402,6 @@
         title: document.getElementById('phase-display'),
         editorPane: document.getElementById('editor-pane'),
         logPane: document.getElementById('log-pane'),
-        
-        // Controls
         btnPlay: document.getElementById('btn-play'),
         btnNext: document.getElementById('btn-next'),
         btnUpdate: document.getElementById('btn-update'),
@@ -388,39 +419,39 @@
     let nodeMap = {};
 
     function init() {
-        // Load the string directly so we preserve comments on first load
-        dom.input.value = defaultDataString;
-        render();
+        // 1. Populate Editor
+        dom.input.value = editorString;
+        
+        // 2. Render initial view using Safe Data Object (Guarantees no blank screen)
+        //    Then we try to parse the editor content to sync up.
+        render(safeData);
         clearLog();
     }
 
-    /**
-     * Regex to strip JSON comments (C-style) while preserving strings.
-     * Captures:
-     * 1. Escaped quotes \"
-     * 2. String literals "..."
-     * 3. Single line comments //...
-     * 4. Multi line comments /* ... */
-     */
+    // Strip comments (C-style)
     function stripJsonComments(jsonStr) {
+        // Regex captures: 1. Strings, 2. Single line comments, 3. Block comments
         return jsonStr.replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (m, g) => g ? "" : m);
     }
 
-    // --- Render with Error Handling ---
-    function render() {
+    // --- Render ---
+    function render(forceData = null) {
         try {
-            // 1. Strip comments
-            const cleanJson = stripJsonComments(dom.input.value);
-            // 2. Parse
-            const raw = JSON.parse(cleanJson);
-            graph = raw;
+            if (forceData) {
+                graph = forceData;
+            } else {
+                // Try parsing editor content
+                const cleanJson = stripJsonComments(dom.input.value);
+                graph = JSON.parse(cleanJson);
+            }
             
-            // Success State
+            // Success UI
             dom.input.classList.remove('invalid');
             dom.errorMsg.classList.remove('visible');
             dom.errorMsg.innerText = "";
             dom.btnUpdate.innerText = "Update Diagram";
 
+            // Drawing
             nodeMap = {};
             dom.title.innerText = graph.title || "";
             dom.container.innerHTML = '';
@@ -430,7 +461,6 @@
                 el.className = `node type-${n.type || 'default'} tag-${n.tag || 'core'}`;
                 el.id = `node-${n.id}`;
                 
-                // Geometry
                 el.style.left = `${n.x}px`;
                 el.style.top = `${n.y}px`;
                 el.style.width = n.w ? `${n.w}px` : '100px';
@@ -446,7 +476,7 @@
                     <div class="step-badges-container" id="badges-${n.id}"></div>
                 `;
                 
-                // Safe text insertion
+                // Safe text setting
                 el.querySelector('.node-label').textContent = n.label || "";
                 
                 el.addEventListener('mousedown', handleDragStart);
@@ -458,12 +488,11 @@
             resetAnimation(true);
 
         } catch (e) {
-            // Error State
-            console.warn("JSON Parse Error:", e);
+            console.warn("JSON Error:", e);
             dom.input.classList.add('invalid');
-            dom.errorMsg.innerText = "Invalid JSON: " + e.message;
+            dom.errorMsg.innerText = "Error: " + e.message;
             dom.errorMsg.classList.add('visible');
-            dom.btnUpdate.innerText = "⚠ Fix JSON Error";
+            dom.btnUpdate.innerText = "⚠ Fix Syntax";
         }
     }
 
@@ -549,7 +578,7 @@
             if(nodeItem) {
                 nodeItem.x = parseInt(dragTarget.style.left);
                 nodeItem.y = parseInt(dragTarget.style.top);
-                // Note: Updating from drag destroys comments as we must regenerate JSON
+                // Note: Updating via drag removes comments as we regenerate JSON
                 dom.input.value = JSON.stringify(graph, null, 4);
             }
         }
@@ -584,7 +613,6 @@
         const div = document.createElement('div');
         div.className = 'log-entry';
         const timeStr = new Date().toLocaleTimeString().split(' ')[0];
-        // Use textContent for safety on log text
         div.innerHTML = `<span class="log-step">Step ${stepNum}</span><span class="log-text"></span><span class="log-time">${timeStr}</span>`;
         div.querySelector('.log-text').textContent = text;
         dom.logPane.appendChild(div);
@@ -599,11 +627,7 @@
         dom.particle.style.display = 'none';
         dom.btnNext.disabled = true;
         dom.btnPlay.innerHTML = "▶ Play";
-        
-        if (fullReset) {
-            clearLog();
-            clearBadges();
-        }
+        if (fullReset) { clearLog(); clearBadges(); }
     }
 
     function togglePlay() {
@@ -612,16 +636,11 @@
             isPlaying = false;
             dom.btnPlay.innerHTML = "▶ Resume";
         } else {
-            if (stepIndex === 0) {
-                clearLog();
-                clearBadges();
-            }
-            if (stepIndex >= (graph.sequence || []).length) {
+            if (stepIndex === 0 || stepIndex >= (graph.sequence || []).length) {
                 stepIndex = 0;
                 clearLog();
                 clearBadges();
             }
-
             isPlaying = true;
             dom.btnPlay.innerHTML = "⏸ Pause";
             runSequence();
@@ -666,9 +685,7 @@
         p.style.transition = 'none';
         p.style.left = (x1 - 6) + 'px';
         p.style.top = (y1 - 6) + 'px';
-        
         void p.offsetWidth;
-
         p.style.transition = 'all 1s ease-in-out';
         p.style.left = (x2 - 6) + 'px';
         p.style.top = (y2 - 6) + 'px';
@@ -680,7 +697,7 @@
         }, 1000);
     }
 
-    dom.btnUpdate.onclick = () => { render(); resetAnimation(true); };
+    dom.btnUpdate.onclick = () => { render(); };
     dom.btnPlay.onclick = togglePlay;
     dom.btnNext.onclick = () => {
         dom.btnNext.disabled = true;
