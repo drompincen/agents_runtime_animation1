@@ -12,7 +12,7 @@
             --panel-bg: #252526;
             --border-color: #3e3e42;
             --text-main: #d4d4d4;
-            --accent-color: #007acc; 
+            --accent-color: #007acc;
             --highlight: #17a2b8;
             --error-color: #f14c4c;
 
@@ -86,7 +86,7 @@
         #editor-pane.hidden { display: none; }
 
         .editor-toolbar { padding: 10px; background: #252526; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        
+
         #error-msg {
             color: var(--error-color);
             font-size: 0.8rem;
@@ -160,10 +160,16 @@
             border-bottom: 1px solid #2d2d2d;
             display: flex;
             gap: 10px;
+            align-items: baseline; /* Align text baselines */
             animation: fadeIn 0.3s ease;
         }
         .log-entry:hover { background: #2a2d2e; }
-        .log-step { color: var(--highlight); font-weight: bold; min-width: 60px; }
+        .log-step { color: #888; font-weight: bold; min-width: 50px; }
+
+        .log-tag { font-weight: bold; margin-right: 5px; font-size: 0.85rem; white-space: nowrap; }
+        .log-tag.tag-ready { color: #2ecc71; } /* Green */
+        .log-tag.tag-wip { color: #f39c12; } /* Yellow */
+
         .log-text { color: #d4d4d4; }
         .log-time { color: #666; margin-left: auto; font-size: 0.8em; }
 
@@ -191,7 +197,7 @@
             user-select: none; padding: 8px; box-sizing: border-box; z-index: 10;
             transition: border-color 0.2s;
         }
-        
+
         body.is-editing .node { cursor: grab; }
         body.is-editing .node:active { cursor: grabbing; border-color: var(--highlight); }
 
@@ -206,29 +212,31 @@
         }
 
         .node-icon { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; opacity: 0.9; }
-        
-        /* Handles \n in JSON strings safely */
-        .node-label { 
-            font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px; line-height: 1.2; 
+
+        .node-label {
+            font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px; line-height: 1.2;
             white-space: pre-line;
         }
 
+        /* Status Icon (Node-level) */
+        .status-icon {
+            position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            z-index: 15; border: 2px solid #2d2d2d;
+        }
+        .status-ready { background-color: #2ecc71; color: #fff; }
+        .status-wip { background-color: #f39c12; color: #fff; }
+
         /* Step Badge Container inside Node */
         .step-badges-container {
-            display: flex;
-            gap: 3px;
-            justify-content: center;
-            flex-wrap: wrap;
-            width: 100%;
-            margin-top: auto;
-            padding-top: 4px;
-            min-height: 18px;
+            display: flex; gap: 3px; justify-content: center; flex-wrap: wrap;
+            width: 100%; margin-top: auto; padding-top: 4px; min-height: 18px;
         }
 
+        /* The actual step number circle */
         .step-badge {
             width: 16px; height: 16px;
-            background: var(--highlight);
-            color: #1e1e1e;
             border-radius: 50%;
             font-size: 0.7rem;
             font-weight: bold;
@@ -237,6 +245,23 @@
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* New Styles for Step Status */
+        .step-badge.badge-ready {
+            background: #004e8a; /* Darker Blue */
+            color: white;
+        }
+
+        .step-badge.badge-wip {
+            background: #f1c40f; /* Yellow */
+            color: #222; /* Dark text */
+        }
+
+        /* Fallback default */
+        .step-badge.badge-default {
+             background: var(--highlight);
+             color: #1e1e1e;
         }
 
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
@@ -262,7 +287,7 @@
 
 <header>
     <div class="brand">Phases</div>
-    
+
     <div style="display:flex;">
         <div class="controls-group">
             <button id="btn-play">▶ Play</button>
@@ -294,7 +319,7 @@
     </div>
 
     <div id="right-pane-container">
-        
+
         <div id="preview-canvas">
             <div id="phase-display"></div>
             <svg class="connections-layer" id="connections-layer"></svg>
@@ -327,17 +352,17 @@
     // Nodes define the boxes
     "nodes": [
         { "id": "u", "type": "user", "tag": "external", "label": "Customer", "x": 60, "y": 250, "w": 100, "h": 70 },
-        { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80 },
-        
+        { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80, "status": "ready" },
+
         // This is our legacy system we are trying to replace
         { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\\\\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
-        
-        { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\\\\nAgent", "x": 500, "y": 120, "w": 110, "h": 70 },
-        { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\\\\nService", "x": 750, "y": 120, "w": 120, "h": 80 },
-        
+
+        { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\\\\nAgent", "x": 500, "y": 120, "w": 110, "h": 70, "status": "wip" },
+        { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\\\\nService", "x": 750, "y": 120, "w": 120, "h": 80, "status": "wip" },
+
         /* Databases */
         { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
-        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\\\nCache", "x": 950, "y": 120, "w": 100, "h": 70 }
+        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\\\nCache", "x": 950, "y": 120, "w": 100, "h": 70, "status": "wip" }
     ],
     // Connections draw the lines
     "connections": [
@@ -349,13 +374,14 @@
         { "from": "new_svc", "to": "db_cache" }
     ],
     // Sequence defines the animation path
+    // Status can be "ready" (blue/green) or "wip" (yellow)
     "sequence": [
-        { "from": "u", "to": "fe", "text": "User places order" },
-        { "from": "fe", "to": "agent", "text": "Agent classifies request" },
-        { "from": "agent", "to": "new_svc", "text": "Route to Microservice" },
-        { "from": "new_svc", "to": "db_cache", "text": "Check Inventory" },
-        { "from": "db_cache", "to": "new_svc", "text": "Stock Confirmed" },
-        { "from": "new_svc", "to": "fe", "text": "Order Success" }
+        { "from": "u", "to": "fe", "text": "User places order", "status": "ready" },
+        { "from": "fe", "to": "agent", "text": "Agent classifies request", "status": "ready" },
+        { "from": "agent", "to": "new_svc", "text": "Route to Microservice", "status": "wip" },
+        { "from": "new_svc", "to": "db_cache", "text": "Check Inventory", "status": "wip" },
+        { "from": "db_cache", "to": "new_svc", "text": "Stock Confirmed", "status": "wip" },
+        { "from": "new_svc", "to": "fe", "text": "Order Success", "status": "ready" }
     ]
 }`;
 
@@ -389,7 +415,7 @@
         // 1. Populate Editor
         dom.input.value = editorString;
         // 2. Render from editor content (which includes comments)
-        render(); 
+        render();
         clearLog();
     }
 
@@ -404,7 +430,7 @@
             // Parse editor content on the fly
             const cleanJson = stripJsonComments(dom.input.value);
             graph = JSON.parse(cleanJson);
-            
+
             // Success UI
             dom.input.classList.remove('invalid');
             dom.errorMsg.classList.remove('visible');
@@ -415,30 +441,39 @@
             nodeMap = {};
             dom.title.innerText = graph.title || "";
             dom.container.innerHTML = '';
-            
+
             (graph.nodes || []).forEach(n => {
                 const el = document.createElement('div');
                 el.className = `node type-${n.type || 'default'} tag-${n.tag || 'core'}`;
                 el.id = `node-${n.id}`;
-                
+
                 el.style.left = `${n.x}px`;
                 el.style.top = `${n.y}px`;
                 el.style.width = n.w ? `${n.w}px` : '100px';
-                el.style.height = n.h ? `${n.h}px` : 'auto'; 
-                
+                el.style.height = n.h ? `${n.h}px` : 'auto';
+
                 const iconSvg = ICONS[n.type] || ICONS.default;
-                
+
+                // Status Icon Logic (Node level)
+                let statusHtml = '';
+                if(n.status === 'ready') {
+                    statusHtml = `<div class="status-icon status-ready" title="Ready">✔</div>`;
+                } else if (n.status === 'wip') {
+                    statusHtml = `<div class="status-icon status-wip" title="Work In Progress">⏳</div>`;
+                }
+
                 el.innerHTML = `
+                    ${statusHtml}
                     <div class="node-content-wrapper">
                         <svg class="node-icon" viewBox="0 0 24 24">${iconSvg}</svg>
                         <div class="node-label"></div>
                     </div>
                     <div class="step-badges-container" id="badges-${n.id}"></div>
                 `;
-                
+
                 // Safe text setting
                 el.querySelector('.node-label').textContent = n.label || "";
-                
+
                 el.addEventListener('mousedown', handleDragStart);
                 dom.container.appendChild(el);
                 nodeMap[n.id] = { ...n, el };
@@ -556,25 +591,40 @@
         document.querySelectorAll('.step-badge').forEach(el => el.remove());
     }
 
-    function addStepBadge(nodeId, stepNum) {
+    function addStepBadge(nodeId, stepNum, status) {
         const container = document.getElementById(`badges-${nodeId}`);
         if(container) {
             const badge = document.createElement('div');
             badge.className = 'step-badge';
+
+            // Check status style
+            if(status === 'wip') badge.classList.add('badge-wip');
+            else if(status === 'ready') badge.classList.add('badge-ready');
+            else badge.classList.add('badge-default');
+
             badge.innerText = stepNum;
             container.appendChild(badge);
         }
     }
 
-    function appendLog(stepNum, text) {
+    function appendLog(stepNum, text, status) {
         if(dom.logPane.children[0] && dom.logPane.children[0].innerText.includes("Ready")) {
             dom.logPane.innerHTML = '';
         }
         const div = document.createElement('div');
         div.className = 'log-entry';
         const timeStr = new Date().toLocaleTimeString().split(' ')[0];
+
+        // Status Tag Logic
+        let tagHtml = '';
+        if(status === 'wip') {
+            tagHtml = '<span class="log-tag tag-wip">[In Progress]</span>';
+        } else if (status === 'ready') {
+            tagHtml = '<span class="log-tag tag-ready">[READY]</span>';
+        }
+
         // Use textContent for safety on log text
-        div.innerHTML = `<span class="log-step">Step ${stepNum}</span><span class="log-text"></span><span class="log-time">${timeStr}</span>`;
+        div.innerHTML = `<span class="log-step">Step ${stepNum}</span>${tagHtml}<span class="log-text"></span><span class="log-time">${timeStr}</span>`;
         div.querySelector('.log-text').textContent = text;
         dom.logPane.appendChild(div);
         dom.logPane.scrollTop = dom.logPane.scrollHeight;
@@ -652,8 +702,8 @@
         p.style.top = (y2 - 6) + 'px';
 
         setTimeout(() => {
-            addStepBadge(step.to, stepNum);
-            appendLog(stepNum, step.text);
+            addStepBadge(step.to, stepNum, step.status);
+            appendLog(stepNum, step.text, step.status);
             cb();
         }, 1000);
     }
