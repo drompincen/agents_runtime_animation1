@@ -117,8 +117,9 @@
         .seq-head-text { font-size: 12px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }
 
         .seq-arrow { stroke: #d4d4d4; stroke-width: 2; marker-end: url(#arrowhead); }
-        .seq-arrow-label { font-size: 11px; fill: #aaa; text-anchor: middle; background: #1e1e1e; }
-        .seq-note-rect { fill: #1e1e1e; }
+
+        /* Label above line, no background rect needed now */
+        .seq-arrow-label { font-size: 11px; fill: #aaa; text-anchor: middle; }
 
         /* Sequence Status Icons */
         .seq-status-bg { stroke: #2d2d2d; stroke-width: 1px; }
@@ -144,7 +145,7 @@
 
         /* 2. Floating Notebook */
         #notebook-widget {
-            position: absolute; top: 20px; right: 20px; width: 320px; height: 400px;
+            position: absolute; top: 20px; right: 20px; width: 620px; height: 600px;
             background: #fdf6e3; border-radius: 4px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             z-index: 100; display: flex; flex-direction: column;
@@ -186,7 +187,7 @@
 
         /* 4. Log Pane */
         #log-pane {
-            height: 120px; background: #1e1e1e; color: #ccc;
+            height: 450px; background: #1e1e1e; color: #ccc;
             overflow-y: auto; display: flex; flex-direction: column;
             font-family: 'Consolas', monospace; font-size: 13px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
@@ -328,6 +329,7 @@
 
             <div id="sequence-view">
             </div>
+            <div id="seq-particle"></div>
 
             <div id="notebook-widget">
                 <div class="notebook-header">
@@ -394,6 +396,7 @@
         container: document.getElementById('nodes-container'),
         svgLayer: document.getElementById('connections-layer'),
         particle: document.getElementById('particle'),
+        seqParticle: document.getElementById('seq-particle'),
         title: document.getElementById('phase-display'),
         editorPane: document.getElementById('left-sidebar'),
         notebookWidget: document.getElementById('notebook-widget'),
@@ -531,7 +534,7 @@
         const colWidth = 160;
         const startX = 60;
         const headerHeight = 60;
-        const rowHeight = 70;
+        const rowHeight = 50; // Compact height
 
         const svgWidth = startX + (visibleNodes.length * colWidth);
         const svgHeight = headerHeight + (sequence.length * rowHeight) + 50;
@@ -552,14 +555,14 @@
 
             const label = node.label.replace(/\\n/g, ' ');
 
-            // Status Icon Logic for SVG
+            // Status Icon Logic for SVG (Fixed position)
             let statusSvg = "";
             if(node.status === 'ready') {
-                statusSvg = `<circle cx="${x + 50}" cy="10" r="8" class="seq-status-bg status-ready-svg" />
-                             <text x="${x + 50}" y="10" class="seq-status-text">✔</text>`;
+                statusSvg = `<circle cx="${x + 60}" cy="10" r="8" class="seq-status-bg status-ready-svg" />
+                             <text x="${x + 60}" y="10" class="seq-status-text">✔</text>`;
             } else if (node.status === 'wip') {
-                statusSvg = `<circle cx="${x + 50}" cy="10" r="8" class="seq-status-bg status-wip-svg" />
-                             <text x="${x + 50}" y="10" class="seq-status-text">⏳</text>`;
+                statusSvg = `<circle cx="${x + 60}" cy="10" r="8" class="seq-status-bg status-wip-svg" />
+                             <text x="${x + 60}" y="10" class="seq-status-text">⏳</text>`;
             }
 
             // Header Group (Styled by CSS)
@@ -571,7 +574,7 @@
             </g>`;
         });
 
-        // 2. Messages (Initially Hidden for Animation)
+        // 2. Messages (Labels ABOVE line)
         sequence.forEach((step, index) => {
             const srcIndex = visibleNodes.findIndex(n => n.id === step.from);
             const tgtIndex = visibleNodes.findIndex(n => n.id === step.to);
@@ -586,13 +589,11 @@
 
                 const labelX = (x1 + x2) / 2;
                 const labelText = `[${index+1}] ${step.text}`;
-                const textWidth = labelText.length * 6.5;
 
                 // Group set to opacity 0 for animation
                 svg += `<g id="${groupId}" style="opacity: 0; transition: opacity 0.5s ease-in-out;">
                     <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="seq-arrow" />
-                    <rect x="${labelX - (textWidth/2)}" y="${y - 14}" width="${textWidth}" height="16" class="seq-note-rect" />
-                    <text x="${labelX}" y="${y - 2}" class="seq-arrow-label">${labelText}</text>
+                    <text x="${labelX}" y="${y - 6}" class="seq-arrow-label">${labelText}</text>
                 </g>`;
             } else {
                 sequenceGroups[index] = null;
