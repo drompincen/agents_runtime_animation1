@@ -74,8 +74,8 @@
         /* --- Main Layout --- */
         main { display: flex; flex: 1; height: calc(100vh - 50px); overflow: hidden; }
 
-        /* Left Pane: Editor */
-        #editor-pane {
+        /* Left Pane Container (Editor + Notes) */
+        #left-sidebar {
             width: 30%; min-width: 300px;
             display: flex; flex-direction: column;
             border-right: 1px solid var(--border-color);
@@ -83,27 +83,82 @@
             transition: transform 0.3s ease;
             z-index: 50;
         }
-        #editor-pane.hidden { display: none; }
+        #left-sidebar.hidden { display: none; }
+
+        /* JSON Editor Section */
+        #editor-section {
+            flex: 2; /* Takes up 2/3 of sidebar */
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid var(--border-color);
+        }
 
         .editor-toolbar { padding: 10px; background: #252526; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
 
         #error-msg {
-            color: var(--error-color);
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
-            display: none;
+            color: var(--error-color); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: none;
         }
         #error-msg.visible { display: block; animation: flash 0.5s; }
 
-        textarea {
+        textarea#json-input {
             flex: 1; width: 100%; border: none; padding: 20px;
             font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.5;
             background: #1e1e1e; color: #dcdcaa; resize: none; outline: none; box-sizing: border-box;
         }
         textarea.invalid { border-left: 4px solid var(--error-color); }
+
+        /* Notebook Section */
+        #notebook-section {
+            flex: 1; /* Takes up 1/3 of sidebar */
+            display: flex;
+            flex-direction: column;
+            background: #fdf6e3; /* Notebook yellow */
+            border-top: 1px solid #d4c4a8;
+            position: relative;
+        }
+
+        .notebook-header {
+            background: #eee8d5;
+            color: #586e75;
+            padding: 5px 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-bottom: 1px solid #d4c4a8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        textarea#notebook-input {
+            flex: 1;
+            width: 100%;
+            border: none;
+            padding: 15px 25px; /* Left padding for red line */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 24px; /* Line height must match background size */
+            background-color: #fdf6e3;
+            color: #444;
+            resize: none;
+            outline: none;
+            box-sizing: border-box;
+
+            /* Notebook Paper Lines */
+            background-image: linear-gradient(#d4c4a8 1px, transparent 1px);
+            background-size: 100% 24px; /* Matches line-height */
+            background-attachment: local;
+        }
+
+        /* Red vertical margin line */
+        #notebook-section::before {
+            content: '';
+            position: absolute;
+            top: 28px; bottom: 0; left: 20px;
+            width: 1px;
+            background: #ff9999;
+            z-index: 10;
+            pointer-events: none;
+        }
+
 
         /* Right Pane: Container for Canvas + Log */
         #right-pane-container {
@@ -144,7 +199,10 @@
 
         /* 3. Log Pane */
         #log-pane {
-            height: 180px; /* Default Height */
+            /* --- CONFIGURATION: DEFAULT HEIGHT --- */
+            height: 280px; /* <--- CHANGE THIS to adjust default height */
+            /* ------------------------------------- */
+
             background: #1e1e1e;
             color: #ccc;
             overflow-y: auto;
@@ -160,15 +218,15 @@
             border-bottom: 1px solid #2d2d2d;
             display: flex;
             gap: 10px;
-            align-items: baseline; /* Align text baselines */
+            align-items: baseline;
             animation: fadeIn 0.3s ease;
         }
         .log-entry:hover { background: #2a2d2e; }
         .log-step { color: #888; font-weight: bold; min-width: 50px; }
 
         .log-tag { font-weight: bold; margin-right: 5px; font-size: 0.85rem; white-space: nowrap; }
-        .log-tag.tag-ready { color: #2ecc71; } /* Green */
-        .log-tag.tag-wip { color: #f39c12; } /* Yellow */
+        .log-tag.tag-ready { color: #2ecc71; }
+        .log-tag.tag-wip { color: #f39c12; }
 
         .log-text { color: #d4d4d4; }
         .log-time { color: #666; margin-left: auto; font-size: 0.8em; }
@@ -248,21 +306,9 @@
         }
 
         /* New Styles for Step Status */
-        .step-badge.badge-ready {
-            background: #004e8a; /* Darker Blue */
-            color: white;
-        }
-
-        .step-badge.badge-wip {
-            background: #f1c40f; /* Yellow */
-            color: #222; /* Dark text */
-        }
-
-        /* Fallback default */
-        .step-badge.badge-default {
-             background: var(--highlight);
-             color: #1e1e1e;
-        }
+        .step-badge.badge-ready { background: #004e8a; color: white; }
+        .step-badge.badge-wip { background: #f1c40f; color: #222; }
+        .step-badge.badge-default { background: var(--highlight); color: #1e1e1e; }
 
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 
@@ -310,12 +356,21 @@
 </header>
 
 <main>
-    <div id="editor-pane" class="hidden">
-        <div class="editor-toolbar">
-            <button id="btn-update">Update Diagram</button>
-            <span id="error-msg"></span>
+    <div id="left-sidebar" class="hidden">
+
+        <div id="editor-section">
+            <div class="editor-toolbar">
+                <button id="btn-update">Update Diagram</button>
+                <span id="error-msg"></span>
+            </div>
+            <textarea id="json-input" spellcheck="false" placeholder="Paste valid JSON here..."></textarea>
         </div>
-        <textarea id="json-input" spellcheck="false" placeholder="Paste valid JSON here..."></textarea>
+
+        <div id="notebook-section">
+            <div class="notebook-header">Project Notes</div>
+            <textarea id="notebook-input" spellcheck="false" placeholder="Type your notes here..."></textarea>
+        </div>
+
     </div>
 
     <div id="right-pane-container">
@@ -393,7 +448,7 @@
         svgLayer: document.getElementById('connections-layer'),
         particle: document.getElementById('particle'),
         title: document.getElementById('phase-display'),
-        editorPane: document.getElementById('editor-pane'),
+        leftSidebar: document.getElementById('left-sidebar'),
         logPane: document.getElementById('log-pane'),
         btnPlay: document.getElementById('btn-play'),
         btnNext: document.getElementById('btn-next'),
@@ -412,9 +467,7 @@
     let nodeMap = {};
 
     function init() {
-        // 1. Populate Editor
         dom.input.value = editorString;
-        // 2. Render from editor content (which includes comments)
         render();
         clearLog();
     }
@@ -427,17 +480,14 @@
     // --- Render ---
     function render() {
         try {
-            // Parse editor content on the fly
             const cleanJson = stripJsonComments(dom.input.value);
             graph = JSON.parse(cleanJson);
 
-            // Success UI
             dom.input.classList.remove('invalid');
             dom.errorMsg.classList.remove('visible');
             dom.errorMsg.innerText = "";
             dom.btnUpdate.innerText = "Update Diagram";
 
-            // Drawing
             nodeMap = {};
             dom.title.innerText = graph.title || "";
             dom.container.innerHTML = '';
@@ -454,7 +504,6 @@
 
                 const iconSvg = ICONS[n.type] || ICONS.default;
 
-                // Status Icon Logic (Node level)
                 let statusHtml = '';
                 if(n.status === 'ready') {
                     statusHtml = `<div class="status-icon status-ready" title="Ready">✔</div>`;
@@ -471,7 +520,6 @@
                     <div class="step-badges-container" id="badges-${n.id}"></div>
                 `;
 
-                // Safe text setting
                 el.querySelector('.node-label').textContent = n.label || "";
 
                 el.addEventListener('mousedown', handleDragStart);
@@ -516,8 +564,8 @@
     });
 
     dom.chkShowEditor.addEventListener('change', (e) => {
-        if(e.target.checked) dom.editorPane.classList.remove('hidden');
-        else dom.editorPane.classList.add('hidden');
+        if(e.target.checked) dom.leftSidebar.classList.remove('hidden');
+        else dom.leftSidebar.classList.add('hidden');
     });
 
     // --- Resizer Logic ---
@@ -573,7 +621,7 @@
             if(nodeItem) {
                 nodeItem.x = parseInt(dragTarget.style.left);
                 nodeItem.y = parseInt(dragTarget.style.top);
-                // Note: Updating via drag removes comments as we regenerate JSON
+                // Updating via drag removes comments as we regenerate JSON
                 dom.input.value = JSON.stringify(graph, null, 4);
             }
         }
@@ -597,7 +645,6 @@
             const badge = document.createElement('div');
             badge.className = 'step-badge';
 
-            // Check status style
             if(status === 'wip') badge.classList.add('badge-wip');
             else if(status === 'ready') badge.classList.add('badge-ready');
             else badge.classList.add('badge-default');
@@ -615,15 +662,10 @@
         div.className = 'log-entry';
         const timeStr = new Date().toLocaleTimeString().split(' ')[0];
 
-        // Status Tag Logic
         let tagHtml = '';
-        if(status === 'wip') {
-            tagHtml = '<span class="log-tag tag-wip">[In Progress]</span>';
-        } else if (status === 'ready') {
-            tagHtml = '<span class="log-tag tag-ready">[READY]</span>';
-        }
+        if(status === 'wip') tagHtml = '<span class="log-tag tag-wip">[In Progress]</span>';
+        else if (status === 'ready') tagHtml = '<span class="log-tag tag-ready">[READY]</span>';
 
-        // Use textContent for safety on log text
         div.innerHTML = `<span class="log-step">Step ${stepNum}</span>${tagHtml}<span class="log-text"></span><span class="log-time">${timeStr}</span>`;
         div.querySelector('.log-text').textContent = text;
         dom.logPane.appendChild(div);
