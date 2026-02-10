@@ -6,46 +6,34 @@
     <title>Phases: Architecture Animator</title>
     <style>
         :root {
-            /* Dark Theme Variables */
             --bg-color: #1e1e1e;
             --grid-color: rgba(255, 255, 255, 0.05);
             --panel-bg: #252526;
             --border-color: #3e3e42;
             --text-main: #d4d4d4;
-            --accent-color: #007acc; 
+            --accent-color: #007acc;
             --highlight: #17a2b8;
             --error-color: #f14c4c;
 
-            /* Node Tag Colors */
-            --tag-legacy-bg: #4a1818; --tag-legacy-border: #e74c3c;
-            --tag-new-bg: #144226; --tag-new-border: #2ecc71;
-            --tag-core-bg: #154360; --tag-core-border: #3498db;
-            --tag-agent-bg: #4a235a; --tag-agent-border: #9b59b6;
-            --tag-external-bg: #34495e; --tag-external-border: #7f8c8d;
+            /* Node Colors */
+            --tag-legacy-bg: #4a1818; --tag-legacy-border: #e74c3c; --tag-legacy-text: #ecf0f1;
+            --tag-new-bg: #144226; --tag-new-border: #2ecc71; --tag-new-text: #ecf0f1;
+            --tag-core-bg: #154360; --tag-core-border: #3498db; --tag-core-text: #ecf0f1;
+            --tag-agent-bg: #4a235a; --tag-agent-border: #9b59b6; --tag-agent-text: #ecf0f1;
+            --tag-external-bg: #34495e; --tag-external-border: #7f8c8d; --tag-external-text: #bdc3c7;
         }
 
         body {
-            margin: 0;
-            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            margin: 0; font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+            background: var(--bg-color); color: var(--text-main);
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         /* --- Toolbar --- */
         header {
-            background: #2d2d2d;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 20px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 100;
-            flex-shrink: 0;
+            background: #2d2d2d; border-bottom: 1px solid var(--border-color);
+            padding: 0 20px; height: 50px; display: flex; align-items: center;
+            justify-content: space-between; z-index: 100; flex-shrink: 0;
         }
 
         .brand { font-weight: 700; font-size: 1.2rem; letter-spacing: 1px; color: #fff; text-transform: uppercase; }
@@ -55,14 +43,9 @@
         .divider { width: 1px; height: 24px; background: #555; margin: 0 10px; }
 
         button {
-            background: var(--accent-color);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            padding: 6px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+            background: var(--accent-color); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 6px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
         }
         button:hover { filter: brightness(1.2); }
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
@@ -71,31 +54,19 @@
         input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
         input[type="number"] { width: 40px; padding: 4px; border-radius: 3px; border: 1px solid #555; background: #333; color: white; }
 
-        /* --- Main Layout --- */
+        /* --- Layout --- */
         main { display: flex; flex: 1; height: calc(100vh - 50px); overflow: hidden; }
 
         /* LEFT: Editor Pane */
         #left-sidebar {
-            width: 30%; min-width: 300px;
-            display: flex; flex-direction: column;
-            border-right: 1px solid var(--border-color);
-            background: var(--panel-bg);
-            transition: width 0.3s ease, min-width 0.3s ease;
-            z-index: 50;
-            overflow: hidden;
+            width: 30%; min-width: 300px; display: flex; flex-direction: column;
+            border-right: 1px solid var(--border-color); background: var(--panel-bg);
+            transition: width 0.3s ease, min-width 0.3s ease; z-index: 50; overflow: hidden;
         }
-        
-        #left-sidebar.hidden { 
-            width: 0; 
-            min-width: 0; 
-            border: none; 
-        }
+        #left-sidebar.hidden { width: 0; min-width: 0; border: none; }
 
         .editor-toolbar { padding: 10px; background: #252526; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        
-        #error-msg {
-            color: var(--error-color); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: none;
-        }
+        #error-msg { color: var(--error-color); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: none; }
         #error-msg.visible { display: block; animation: flash 0.5s; }
 
         textarea#json-input {
@@ -107,178 +78,178 @@
 
         /* CENTER: Container */
         #center-stage {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
+            flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden;
         }
 
-        /* 1. Preview Canvas */
-        #preview-canvas {
-            flex: 1; /* Takes remaining space */
-            position: relative;
+        /* 1. Canvas Wrapper */
+        #canvas-wrapper {
+            flex: 1; position: relative; overflow: hidden;
             background-color: var(--bg-color);
             background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
             background-size: 25px 25px;
-            overflow: hidden;
-            min-height: 200px;
         }
 
-        /* --- FLOATING NOTEBOOK WIDGET --- */
+        /* View 1: Spatial Preview */
+        #preview-canvas {
+            width: 100%; height: 100%;
+            position: absolute; top:0; left:0;
+            transition: opacity 0.3s;
+            z-index: 1;
+        }
+        #preview-canvas.hidden { opacity: 0; pointer-events: none; z-index: -1; }
+
+        /* View 2: Sequence Diagram */
+        #sequence-view {
+            width: 100%; height: 100%;
+            position: absolute; top:0; left:0;
+            overflow: auto;
+            padding: 40px;
+            box-sizing: border-box;
+            opacity: 0; pointer-events: none; z-index: -1;
+            transition: opacity 0.3s;
+            background: var(--bg-color);
+        }
+        #sequence-view.visible { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* --- Sequence Diagram SVG Styles --- */
+        .seq-lifeline { stroke: #555; stroke-width: 1; stroke-dasharray: 5,5; }
+        .seq-head-rect { stroke-width: 2; rx: 6; }
+        .seq-head-text { font-size: 12px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }
+
+        .seq-arrow { stroke: #d4d4d4; stroke-width: 2; marker-end: url(#arrowhead); }
+        .seq-arrow-label { font-size: 11px; fill: #aaa; text-anchor: middle; background: #1e1e1e; }
+        .seq-note-rect { fill: #1e1e1e; }
+
+        /* Sequence Status Icons */
+        .seq-status-bg { stroke: #2d2d2d; stroke-width: 1px; }
+        .seq-status-text { font-size: 10px; font-weight: bold; fill: #fff; text-anchor: middle; dominant-baseline: middle; }
+        .status-ready-svg { fill: #2ecc71; }
+        .status-wip-svg { fill: #f39c12; }
+
+        /* Sequence Header Colors (Match Nodes) */
+        .seq-node.tag-legacy .seq-head-rect { fill: var(--tag-legacy-bg); stroke: var(--tag-legacy-border); }
+        .seq-node.tag-legacy .seq-head-text { fill: var(--tag-legacy-text); }
+
+        .seq-node.tag-new .seq-head-rect { fill: var(--tag-new-bg); stroke: var(--tag-new-border); }
+        .seq-node.tag-new .seq-head-text { fill: var(--tag-new-text); }
+
+        .seq-node.tag-core .seq-head-rect { fill: var(--tag-core-bg); stroke: var(--tag-core-border); }
+        .seq-node.tag-core .seq-head-text { fill: var(--tag-core-text); }
+
+        .seq-node.tag-agent .seq-head-rect { fill: var(--tag-agent-bg); stroke: var(--tag-agent-border); }
+        .seq-node.tag-agent .seq-head-text { fill: var(--tag-agent-text); }
+
+        .seq-node.tag-external .seq-head-rect { fill: var(--tag-external-bg); stroke: var(--tag-external-border); stroke-dasharray: 4,2; }
+        .seq-node.tag-external .seq-head-text { fill: var(--tag-external-text); }
+
+        /* 2. Floating Notebook */
         #notebook-widget {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 320px;
-            height: 400px;
-            background: #fdf6e3;
-            border-radius: 4px;
+            position: absolute; top: 20px; right: 20px; width: 320px; height: 400px;
+            background: #fdf6e3; border-radius: 4px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 100; /* Above nodes */
-            display: flex;
-            flex-direction: column;
+            z-index: 100; display: flex; flex-direction: column;
             border: 1px solid #d4c4a8;
             transition: opacity 0.2s, transform 0.2s;
         }
-        
-        #notebook-widget.hidden {
-            display: none;
-        }
+        #notebook-widget.hidden { display: none; }
 
         .notebook-header {
-            background: #eee8d5;
-            color: #586e75;
-            padding: 8px 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border-bottom: 1px solid #d4c4a8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-radius: 4px 4px 0 0;
+            background: #eee8d5; color: #586e75; padding: 8px 15px;
+            font-size: 0.8rem; font-weight: bold; border-bottom: 1px solid #d4c4a8;
+            text-transform: uppercase; letter-spacing: 1px; border-radius: 4px 4px 0 0;
             display: flex; justify-content: space-between;
         }
 
         textarea.notebook-area {
-            flex: 1;
-            width: 100%;
-            border: none;
-            padding: 5px 25px 5px 35px; /* Left padding for red line */
+            flex: 1; width: 100%; border: none;
+            padding: 5px 25px 5px 35px;
             font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            color: #222;
-            line-height: 30px; 
-            background-color: #fdf6e3;
-            resize: none; 
-            outline: none; 
-            box-sizing: border-box;
+            font-size: 15px; font-weight: 600; color: #222; line-height: 30px;
+            background-color: #fdf6e3; resize: none; outline: none; box-sizing: border-box;
             border-radius: 0 0 4px 4px;
-            
-            /* Paper Lines */
             background-image: linear-gradient(transparent 29px, #d4c4a8 1px);
-            background-size: 100% 30px;
-            background-attachment: local;
+            background-size: 100% 30px; background-attachment: local;
         }
-
-        /* Red Margin Line */
         #notebook-widget::before {
             content: ''; position: absolute; top: 35px; bottom: 10px; left: 25px;
             width: 2px; background: #ff9999; pointer-events: none; opacity: 0.6; z-index: 101;
         }
 
-        /* 2. Resizer Handle */
+        /* 3. Resizer */
         #pane-resizer {
-            height: 10px;
-            background: #252526;
-            border-top: 1px solid #3e3e42;
-            cursor: ns-resize;
-            display: flex; justify-content: center; align-items: center;
-            z-index: 200;
-            flex-shrink: 0;
+            height: 10px; background: #252526; border-top: 1px solid #3e3e42;
+            cursor: ns-resize; display: flex; justify-content: center; align-items: center;
+            z-index: 200; flex-shrink: 0;
         }
         #pane-resizer:hover { background: #3e3e42; }
-        #pane-resizer::after {
-            content: ''; width: 40px; height: 3px; background: #666; border-radius: 2px;
-        }
+        #pane-resizer::after { content: ''; width: 40px; height: 3px; background: #666; border-radius: 2px; }
 
-        /* 3. Log Pane */
+        /* 4. Log Pane */
         #log-pane {
-            height: 120px; /* Default Height */
-            background: #1e1e1e;
-            color: #ccc;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            font-family: 'Consolas', monospace;
-            font-size: 13px;
+            height: 120px; background: #1e1e1e; color: #ccc;
+            overflow-y: auto; display: flex; flex-direction: column;
+            font-family: 'Consolas', monospace; font-size: 13px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
             flex-shrink: 0;
         }
 
         /* Elements */
         #phase-display {
-            position: absolute; top: 20px; left: 20px;
-            font-size: 1.5rem; font-weight: 300; color: rgba(255,255,255,0.8);
+            position: absolute; top: 10px; left: 20px;
+            font-size: 1.2rem; font-weight: 300; color: rgba(255,255,255,0.7);
             text-transform: uppercase; letter-spacing: 2px; pointer-events: none;
-            z-index: 5; border-left: 4px solid var(--accent-color); padding-left: 15px;
+            z-index: 5; border-left: 3px solid var(--accent-color); padding-left: 10px;
         }
 
-        /* SVG & Nodes */
+        /* Spatial Connectors */
         svg.connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
         path.connector { fill: none; stroke: #666; stroke-width: 2; stroke-dasharray: 6,4; opacity: 0.6; }
 
+        /* Nodes */
         .node {
             position: absolute; display: flex; flex-direction: column;
-            justify-content: flex-start; align-items: center; text-align: center;
+            align-items: center; text-align: center;
             border: 2px solid #555; border-radius: 6px; background: #2d2d2d;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: default;
             user-select: none; padding: 8px; box-sizing: border-box; z-index: 10;
             transition: border-color 0.2s;
         }
-        
         body.is-editing .node { cursor: grab; }
         body.is-editing .node:active { cursor: grabbing; border-color: var(--highlight); }
 
-        .node-content-wrapper {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            flex: 1; width: 100%; pointer-events: none;
-        }
-
+        .node-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
         .node-icon { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; opacity: 0.9; }
-        .node-label { font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px; line-height: 1.2; white-space: pre-line; }
+        .node-label { font-weight: 600; font-size: 0.8rem; line-height: 1.2; white-space: pre-line; }
 
-        /* Status Icon (Node-level) */
+        /* SPATIAL STATUS ICONS */
         .status-icon {
-            position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+            position: absolute; top: -10px; right: -10px;
+            width: 20px; height: 20px;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 0.7rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-            z-index: 15; border: 2px solid #2d2d2d;
+            font-size: 0.75rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 20; border: 2px solid #2d2d2d;
         }
-        .status-ready { background-color: #2ecc71; color: #fff; } 
+        .status-ready { background-color: #2ecc71; color: #fff; }
         .status-wip { background-color: #f39c12; color: #fff; }
 
-        /* Step Badge */
-        .step-badges-container {
-            display: flex; gap: 3px; justify-content: center; flex-wrap: wrap;
-            width: 100%; margin-top: auto; padding-top: 4px; min-height: 18px;
-        }
-
+        .step-badges-container { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; width: 100%; margin-top: auto; padding-top: 4px; min-height: 18px; }
         .step-badge {
-            width: 16px; height: 16px; border-radius: 50%;
-            font-size: 0.7rem; font-weight: bold;
+            width: 16px; height: 16px; border-radius: 50%; font-size: 0.7rem; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         .step-badge.badge-ready { background: #004e8a; color: white; }
         .step-badge.badge-wip { background: #f1c40f; color: #222; }
         .step-badge.badge-default { background: var(--highlight); color: #1e1e1e; }
 
+        /* Animation */
+        .message-particle {
+            position: absolute; width: 12px; height: 12px; background: #00ffcc;
+            border-radius: 50%; z-index: 30; box-shadow: 0 0 10px #00ffcc; display: none; pointer-events: none;
+        }
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 
-        /* Tag Styles */
+        /* Node Styles */
         .node.tag-legacy { background: var(--tag-legacy-bg); border-color: var(--tag-legacy-border); color: #ecf0f1; }
         .node.tag-new { background: var(--tag-new-bg); border-color: var(--tag-new-border); color: #ecf0f1; }
         .node.tag-core { background: var(--tag-core-bg); border-color: var(--tag-core-border); color: #ecf0f1; }
@@ -286,25 +257,17 @@
         .node.tag-external { background: var(--tag-external-bg); border-color: var(--tag-external-border); color: #bdc3c7; border-style: dashed; }
         .node.type-database { border-radius: 0 0 12px 12px; border-top-width: 4px; }
 
-        /* Animation Elements */
-        .message-particle {
-            position: absolute; width: 12px; height: 12px; background: #00ffcc;
-            border-radius: 50%; z-index: 30; box-shadow: 0 0 10px #00ffcc;
-            display: none; pointer-events: none;
-        }
-
         /* Logs */
         .log-entry { padding: 6px 15px; border-bottom: 1px solid #2d2d2d; display: flex; gap: 10px; align-items: baseline; animation: fadeIn 0.3s ease; }
         .log-entry:hover { background: #2a2d2e; }
         .log-step { color: #888; font-weight: bold; min-width: 50px; }
         .log-tag { font-weight: bold; margin-right: 5px; font-size: 0.85rem; white-space: nowrap; }
-        .log-tag.tag-ready { color: #2ecc71; } 
+        .log-tag.tag-ready { color: #2ecc71; }
         .log-tag.tag-wip { color: #f39c12; }
         .log-text { color: #d4d4d4; }
         .log-time { color: #666; margin-left: auto; font-size: 0.8em; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Resizing Overlay */
         body.resizing { cursor: ns-resize !important; user-select: none; }
     </style>
 </head>
@@ -312,7 +275,7 @@
 
 <header>
     <div class="brand">Phases</div>
-    
+
     <div style="display:flex;">
         <div class="controls-group">
             <button id="btn-play">▶ Play</button>
@@ -324,11 +287,17 @@
         <div class="divider"></div>
 
         <div class="controls-group">
-            <label class="toggle-label" style="color:var(--highlight)">
+            <label class="toggle-label" style="color:var(--highlight); border:1px solid #333; padding:2px 6px; border-radius:4px;">
+                <input type="checkbox" id="chk-sequence-mode"> Sequence View
+            </label>
+
+            <div class="divider"></div>
+
+            <label class="toggle-label">
                 <input type="checkbox" id="chk-edit-mode"> Enable Editing
             </label>
             <label class="toggle-label">
-                <input type="checkbox" id="chk-show-editor" checked> Show JSON
+                <input type="checkbox" id="chk-show-editor"> Show JSON
             </label>
             <label class="toggle-label">
                 <input type="checkbox" id="chk-show-notes" checked> Show Notebook
@@ -338,7 +307,7 @@
 </header>
 
 <main>
-    <div id="left-sidebar">
+    <div id="left-sidebar" class="hidden">
         <div class="editor-toolbar">
             <button id="btn-update">Update Diagram</button>
             <span id="error-msg"></span>
@@ -347,12 +316,18 @@
     </div>
 
     <div id="center-stage">
-        
-        <div id="preview-canvas">
-            <div id="phase-display"></div>
-            <svg class="connections-layer" id="connections-layer"></svg>
-            <div id="nodes-container"></div>
-            <div id="particle" class="message-particle"></div>
+
+        <div id="canvas-wrapper">
+
+            <div id="preview-canvas">
+                <div id="phase-display"></div>
+                <svg class="connections-layer" id="connections-layer"></svg>
+                <div id="nodes-container"></div>
+                <div id="particle" class="message-particle"></div>
+            </div>
+
+            <div id="sequence-view">
+            </div>
 
             <div id="notebook-widget">
                 <div class="notebook-header">
@@ -382,26 +357,18 @@
         default: '<path d="M3 3h18v18H3z"/>'
     };
 
-    // The single source of truth for the initial load
     const editorString = `{
     "title": "Phase 1: Introducing AI Agents",
     "notes": "Project: Legacy Migration\\\\nAuthor: Architecture Team\\\\n\\\\nObjectives:\\\\n1. Decouple User from Monolith\\\\n2. Introduce AI Agent for Triage\\\\n3. Establish Redis caching layer\\\\n\\\\nStatus: In Development",
-    // Nodes define the boxes
     "nodes": [
         { "id": "u", "type": "user", "tag": "external", "label": "Customer", "x": 60, "y": 250, "w": 100, "h": 70 },
         { "id": "fe", "type": "service", "tag": "core", "label": "Frontend", "x": 250, "y": 250, "w": 120, "h": 80, "status": "ready" },
-        
-        // This is our legacy system we are trying to replace
         { "id": "mono", "type": "service", "tag": "legacy", "label": "Legacy\\\\nMonolith", "x": 500, "y": 380, "w": 140, "h": 90 },
-        
         { "id": "agent", "type": "agent", "tag": "agent", "label": "Triage\\\\nAgent", "x": 500, "y": 120, "w": 110, "h": 70, "status": "wip" },
         { "id": "new_svc", "type": "service", "tag": "new", "label": "Order\\\\nService", "x": 750, "y": 120, "w": 120, "h": 80, "status": "wip" },
-        
-        /* Databases */
-        { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70 },
-        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\\\nCache", "x": 950, "y": 120, "w": 100, "h": 70, "status": "wip" }
+        { "id": "db_main", "type": "database", "tag": "legacy", "label": "Main DB", "x": 750, "y": 380, "w": 100, "h": 70, "skipSequence": true },
+        { "id": "db_cache", "type": "database", "tag": "new", "label": "Redis\\\\nCache", "x": 950, "y": 120, "w": 100, "h": 70, "status": "wip", "skipSequence": true }
     ],
-    // Connections draw the lines
     "connections": [
         { "from": "u", "to": "fe" },
         { "from": "fe", "to": "mono" },
@@ -410,8 +377,6 @@
         { "from": "mono", "to": "db_main" },
         { "from": "new_svc", "to": "db_cache" }
     ],
-    // Sequence defines the animation path
-    // Status can be "ready" (blue/green) or "wip" (yellow)
     "sequence": [
         { "from": "u", "to": "fe", "text": "User places order", "status": "ready" },
         { "from": "fe", "to": "agent", "text": "Agent classifies request", "status": "ready" },
@@ -434,6 +399,9 @@
         notebookWidget: document.getElementById('notebook-widget'),
         notebook: document.getElementById('notebook-display'),
         logPane: document.getElementById('log-pane'),
+        previewCanvas: document.getElementById('preview-canvas'),
+        sequenceView: document.getElementById('sequence-view'),
+
         btnPlay: document.getElementById('btn-play'),
         btnNext: document.getElementById('btn-next'),
         btnUpdate: document.getElementById('btn-update'),
@@ -442,6 +410,8 @@
         chkEditMode: document.getElementById('chk-edit-mode'),
         chkShowEditor: document.getElementById('chk-show-editor'),
         chkShowNotes: document.getElementById('chk-show-notes'),
+        chkSequenceMode: document.getElementById('chk-sequence-mode'),
+
         resizer: document.getElementById('pane-resizer'),
         centerStage: document.getElementById('center-stage')
     };
@@ -451,58 +421,50 @@
     let stepIndex = 0;
     let timer = null;
     let nodeMap = {};
+    let sequenceGroups = [];
 
     function init() {
-        // 1. Populate Editor
         dom.input.value = editorString;
-        // 2. Render from editor content (which includes comments)
-        render(); 
+        render();
         clearLog();
     }
 
-    // Strip comments (C-style)
     function stripJsonComments(jsonStr) {
         return jsonStr.replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (m, g) => g ? "" : m);
     }
 
-    // --- Render ---
+    // --- Render Spatial ---
     function render() {
         try {
-            // Parse editor content on the fly
             const cleanJson = stripJsonComments(dom.input.value);
             graph = JSON.parse(cleanJson);
-            
-            // Success UI
+
             dom.input.classList.remove('invalid');
             dom.errorMsg.classList.remove('visible');
             dom.errorMsg.innerText = "";
             dom.btnUpdate.innerText = "Update Diagram";
 
-            // Drawing
             nodeMap = {};
             dom.title.innerText = graph.title || "";
-            dom.notebook.value = graph.notes || ""; // Update Notebook
+            dom.notebook.value = graph.notes || "";
             dom.container.innerHTML = '';
-            
+
             (graph.nodes || []).forEach(n => {
                 const el = document.createElement('div');
                 el.className = `node type-${n.type || 'default'} tag-${n.tag || 'core'}`;
                 el.id = `node-${n.id}`;
-                
+
                 el.style.left = `${n.x}px`;
                 el.style.top = `${n.y}px`;
                 el.style.width = n.w ? `${n.w}px` : '100px';
-                el.style.height = n.h ? `${n.h}px` : 'auto'; 
-                
+                el.style.height = n.h ? `${n.h}px` : 'auto';
+
                 const iconSvg = ICONS[n.type] || ICONS.default;
-                
-                // Status Icon Logic (Node level)
+
+                // Status Icon (Spatial HTML)
                 let statusHtml = '';
-                if(n.status === 'ready') {
-                    statusHtml = `<div class="status-icon status-ready" title="Ready">✔</div>`;
-                } else if (n.status === 'wip') {
-                    statusHtml = `<div class="status-icon status-wip" title="Work In Progress">⏳</div>`;
-                }
+                if(n.status === 'ready') statusHtml = `<div class="status-icon status-ready" title="Ready">✔</div>`;
+                else if (n.status === 'wip') statusHtml = `<div class="status-icon status-wip" title="WIP">⏳</div>`;
 
                 el.innerHTML = `
                     ${statusHtml}
@@ -512,16 +474,18 @@
                     </div>
                     <div class="step-badges-container" id="badges-${n.id}"></div>
                 `;
-                
-                // Safe text setting
                 el.querySelector('.node-label').textContent = n.label || "";
-                
                 el.addEventListener('mousedown', handleDragStart);
                 dom.container.appendChild(el);
                 nodeMap[n.id] = { ...n, el };
             });
 
             updateConnections();
+
+            if(dom.chkSequenceMode.checked) {
+                renderSequenceView();
+            }
+
             resetAnimation(true);
 
         } catch (e) {
@@ -552,6 +516,93 @@
         });
     }
 
+    // --- Sequence Diagram Renderer ---
+    function renderSequenceView() {
+        const allNodes = graph.nodes || [];
+        const visibleNodes = allNodes.filter(n => !n.skipSequence);
+        const sequence = graph.sequence || [];
+        sequenceGroups = [];
+
+        if(visibleNodes.length === 0) {
+            dom.sequenceView.innerHTML = "<div style='padding:20px; color:#aaa;'>No visible nodes for sequence. Remove 'skipSequence' or add nodes.</div>";
+            return;
+        }
+
+        const colWidth = 160;
+        const startX = 60;
+        const headerHeight = 60;
+        const rowHeight = 70;
+
+        const svgWidth = startX + (visibleNodes.length * colWidth);
+        const svgHeight = headerHeight + (sequence.length * rowHeight) + 50;
+
+        let svg = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#d4d4d4" />
+                </marker>
+            </defs>`;
+
+        // 1. Lifelines (Headers match Spatial Node Styles)
+        visibleNodes.forEach((node, index) => {
+            const x = startX + (index * colWidth) + (colWidth / 2);
+
+            // Build class string to match CSS selectors
+            const tagClass = node.tag ? `tag-${node.tag}` : 'tag-core';
+
+            const label = node.label.replace(/\\n/g, ' ');
+
+            // Status Icon Logic for SVG
+            let statusSvg = "";
+            if(node.status === 'ready') {
+                statusSvg = `<circle cx="${x + 50}" cy="10" r="8" class="seq-status-bg status-ready-svg" />
+                             <text x="${x + 50}" y="10" class="seq-status-text">✔</text>`;
+            } else if (node.status === 'wip') {
+                statusSvg = `<circle cx="${x + 50}" cy="10" r="8" class="seq-status-bg status-wip-svg" />
+                             <text x="${x + 50}" y="10" class="seq-status-text">⏳</text>`;
+            }
+
+            // Header Group (Styled by CSS)
+            svg += `<g class="seq-node ${tagClass}">
+                <rect x="${x - 60}" y="10" width="120" height="40" class="seq-head-rect" />
+                <text x="${x}" y="35" class="seq-head-text">${label}</text>
+                ${statusSvg}
+                <line x1="${x}" y1="50" x2="${x}" y2="${svgHeight}" class="seq-lifeline" />
+            </g>`;
+        });
+
+        // 2. Messages (Initially Hidden for Animation)
+        sequence.forEach((step, index) => {
+            const srcIndex = visibleNodes.findIndex(n => n.id === step.from);
+            const tgtIndex = visibleNodes.findIndex(n => n.id === step.to);
+
+            const y = headerHeight + (index * rowHeight) + 30;
+            const groupId = `seq-step-${index}`;
+            sequenceGroups[index] = groupId;
+
+            if(srcIndex !== -1 && tgtIndex !== -1) {
+                const x1 = startX + (srcIndex * colWidth) + (colWidth / 2);
+                const x2 = startX + (tgtIndex * colWidth) + (colWidth / 2);
+
+                const labelX = (x1 + x2) / 2;
+                const labelText = `[${index+1}] ${step.text}`;
+                const textWidth = labelText.length * 6.5;
+
+                // Group set to opacity 0 for animation
+                svg += `<g id="${groupId}" style="opacity: 0; transition: opacity 0.5s ease-in-out;">
+                    <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="seq-arrow" />
+                    <rect x="${labelX - (textWidth/2)}" y="${y - 14}" width="${textWidth}" height="16" class="seq-note-rect" />
+                    <text x="${labelX}" y="${y - 2}" class="seq-arrow-label">${labelText}</text>
+                </g>`;
+            } else {
+                sequenceGroups[index] = null;
+            }
+        });
+
+        svg += `</svg>`;
+        dom.sequenceView.innerHTML = svg;
+    }
+
     // --- UI Logic ---
     dom.chkEditMode.addEventListener('change', (e) => {
         document.body.classList.toggle('is-editing', e.target.checked);
@@ -567,6 +618,20 @@
         else dom.notebookWidget.classList.add('hidden');
     });
 
+    dom.chkSequenceMode.addEventListener('change', (e) => {
+        if(e.target.checked) {
+            dom.previewCanvas.classList.add('hidden');
+            dom.sequenceView.classList.add('visible');
+            renderSequenceView();
+            // Allow playing in sequence mode
+            dom.btnPlay.disabled = false;
+            dom.btnNext.disabled = true;
+        } else {
+            dom.previewCanvas.classList.remove('hidden');
+            dom.sequenceView.classList.remove('visible');
+        }
+    });
+
     // --- Resizer Logic ---
     let isResizing = false;
     dom.resizer.addEventListener('mousedown', (e) => {
@@ -580,7 +645,7 @@
         if (!isResizing) return;
         const containerRect = dom.centerStage.getBoundingClientRect();
         const newHeight = containerRect.bottom - e.clientY;
-        if (newHeight > 50 && newHeight < containerRect.height * 0.8) {
+        if (newHeight > 20 && newHeight < containerRect.height * 0.8) {
             dom.logPane.style.height = `${newHeight}px`;
         }
     }
@@ -595,7 +660,7 @@
     // --- Drag Logic ---
     let dragTarget = null, dragOffset = {x:0, y:0};
     function handleDragStart(e) {
-        if (!dom.chkEditMode.checked || isPlaying) return;
+        if (!dom.chkEditMode.checked || isPlaying || dom.chkSequenceMode.checked) return;
         dragTarget = e.currentTarget;
         const r = dragTarget.getBoundingClientRect();
         dragOffset.x = e.clientX - r.left;
@@ -620,7 +685,6 @@
             if(nodeItem) {
                 nodeItem.x = parseInt(dragTarget.style.left);
                 nodeItem.y = parseInt(dragTarget.style.top);
-                // Updating via drag removes comments as we regenerate JSON
                 dom.input.value = JSON.stringify(graph, null, 4);
             }
         }
@@ -643,11 +707,9 @@
         if(container) {
             const badge = document.createElement('div');
             badge.className = 'step-badge';
-            
             if(status === 'wip') badge.classList.add('badge-wip');
             else if(status === 'ready') badge.classList.add('badge-ready');
             else badge.classList.add('badge-default');
-
             badge.innerText = stepNum;
             container.appendChild(badge);
         }
@@ -660,7 +722,7 @@
         const div = document.createElement('div');
         div.className = 'log-entry';
         const timeStr = new Date().toLocaleTimeString().split(' ')[0];
-        
+
         let tagHtml = '';
         if(status === 'wip') tagHtml = '<span class="log-tag tag-wip">[In Progress]</span>';
         else if (status === 'ready') tagHtml = '<span class="log-tag tag-ready">[READY]</span>';
@@ -679,7 +741,13 @@
         dom.particle.style.display = 'none';
         dom.btnNext.disabled = true;
         dom.btnPlay.innerHTML = "▶ Play";
-        if (fullReset) { clearLog(); clearBadges(); }
+
+        if (fullReset) {
+            clearLog();
+            clearBadges();
+            // Reset Sequence Opacity
+            document.querySelectorAll('g[id^="seq-step-"]').forEach(g => g.style.opacity = 0);
+        }
     }
 
     function togglePlay() {
@@ -692,6 +760,7 @@
                 stepIndex = 0;
                 clearLog();
                 clearBadges();
+                document.querySelectorAll('g[id^="seq-step-"]').forEach(g => g.style.opacity = 0);
             }
             isPlaying = true;
             dom.btnPlay.innerHTML = "⏸ Pause";
@@ -709,6 +778,7 @@
         }
 
         const step = seq[stepIndex];
+        // Note: stepIndex+1 is the Step Number
         animateStep(step, stepIndex + 1, () => {
             stepIndex++;
             if (dom.chkPause.checked) {
@@ -723,30 +793,52 @@
     }
 
     function animateStep(step, stepNum, cb) {
-        const n1 = nodeMap[step.from];
-        const n2 = nodeMap[step.to];
-        if (!n1 || !n2) { cb(); return; }
+        const isSequenceMode = dom.chkSequenceMode.checked;
 
-        const p = dom.particle;
-        const x1 = parseInt(n1.el.style.left) + n1.el.offsetWidth/2;
-        const y1 = parseInt(n1.el.style.top) + n1.el.offsetHeight/2;
-        const x2 = parseInt(n2.el.style.left) + n2.el.offsetWidth/2;
-        const y2 = parseInt(n2.el.style.top) + n2.el.offsetHeight/2;
+        if (isSequenceMode) {
+            // SEQUENCE ANIMATION: Reveal Arrow
+            // Note: sequenceGroups matches the sequence array index (stepNum - 1)
+            const groupId = sequenceGroups[stepNum - 1];
 
-        p.style.display = 'block';
-        p.style.transition = 'none';
-        p.style.left = (x1 - 6) + 'px';
-        p.style.top = (y1 - 6) + 'px';
-        void p.offsetWidth;
-        p.style.transition = 'all 1s ease-in-out';
-        p.style.left = (x2 - 6) + 'px';
-        p.style.top = (y2 - 6) + 'px';
+            if (groupId) {
+                const el = document.getElementById(groupId);
+                if (el) el.style.opacity = 1;
+                // Add log immediately
+                appendLog(stepNum, step.text, step.status);
+            } else {
+                // If skipped/hidden in sequence, we still log it
+                appendLog(stepNum, step.text + " (Hidden in Seq)", step.status);
+            }
+            // Add a small delay for pacing
+            setTimeout(cb, 500);
 
-        setTimeout(() => {
-            addStepBadge(step.to, stepNum, step.status);
-            appendLog(stepNum, step.text, step.status);
-            cb();
-        }, 1000);
+        } else {
+            // SPATIAL ANIMATION: Particle Travel
+            const n1 = nodeMap[step.from];
+            const n2 = nodeMap[step.to];
+            if (!n1 || !n2) { cb(); return; }
+
+            const p = dom.particle;
+            const x1 = parseInt(n1.el.style.left) + n1.el.offsetWidth/2;
+            const y1 = parseInt(n1.el.style.top) + n1.el.offsetHeight/2;
+            const x2 = parseInt(n2.el.style.left) + n2.el.offsetWidth/2;
+            const y2 = parseInt(n2.el.style.top) + n2.el.offsetHeight/2;
+
+            p.style.display = 'block';
+            p.style.transition = 'none';
+            p.style.left = (x1 - 6) + 'px';
+            p.style.top = (y1 - 6) + 'px';
+            void p.offsetWidth;
+            p.style.transition = 'all 1s ease-in-out';
+            p.style.left = (x2 - 6) + 'px';
+            p.style.top = (y2 - 6) + 'px';
+
+            setTimeout(() => {
+                addStepBadge(step.to, stepNum, step.status);
+                appendLog(stepNum, step.text, step.status);
+                cb();
+            }, 1000);
+        }
     }
 
     dom.btnUpdate.onclick = () => { render(); resetAnimation(true); };
