@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Collaboration Diagram Animation</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --stroke:rgba(255,255,255,.14);
+      --text:#e8ecff;
+      --muted:#a6b0de;
+
+      /* Color groups */
+      --groupA:#7dd3fc;        /* UI + Service0 */
+      --groupA_bg:rgba(125,211,252,.16);
+
+      --groupB:#fbbf24;        /* Service1 + Service2 (sharper) */
+      --groupB_bg:rgba(251,191,36,.18);
+
+      --agent:#c4b5fd;
+      --agent_bg:rgba(196,181,253,.16);
+
+      --mcp:#86efac;
+      --mcp_bg:rgba(134,239,172,.14);
+
+      --human:#ffffff;
+      --human_bg:rgba(255,255,255,.08);
+
+      --line:rgba(220,235,255,.24);
+      --lineActive:rgba(232,236,255,.72);
+
+      --shadow: 0 12px 28px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1100px 650px at 18% 20%, rgba(125,211,252,.18), transparent 55%),
+        radial-gradient(900px 600px at 82% 25%, rgba(251,191,36,.12), transparent 55%),
+        radial-gradient(900px 600px at 55% 100%, rgba(196,181,253,.10), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      overflow:hidden;
+    }
+
+    header{
+      padding:16px 18px 10px;
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+    }
+    h1{
+      margin:0;
+      font-size:16px;
+      font-weight:780;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.35;
+      max-width:78ch;
+    }
+    .controls{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .btn{
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(17,26,51,.64);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:13px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+      user-select:none;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+    }
+    .btn.primary{
+      border-color: rgba(125,211,252,.35);
+      background: rgba(125,211,252,.16);
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    .wrap{
+      height: calc(100vh - 74px);
+      padding: 0 18px 18px;
+    }
+    .panel{
+      position:relative;
+      height:100%;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(17,26,51,.70), rgba(15,24,48,.70));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    svg{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    /* Node styles */
+    .node{
+      fill: rgba(20,31,61,.82);
+      stroke: rgba(255,255,255,.14);
+      stroke-width: 1.2;
+      rx: 16; ry: 16;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.22));
+    }
+    .node.human{ fill: var(--human_bg); stroke: rgba(255,255,255,.26); }
+    .node.groupA{ fill: var(--groupA_bg); stroke: rgba(125,211,252,.48); }
+    .node.groupB{ fill: var(--groupB_bg); stroke: rgba(251,191,36,.48); }
+    .node.agent{ fill: var(--agent_bg); stroke: rgba(196,181,253,.52); }
+    .node.mcp{ fill: var(--mcp_bg); stroke: rgba(134,239,172,.52); }
+
+    .label{
+      fill: var(--text);
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing:.15px;
+    }
+    .sublabel{
+      fill: rgba(166,176,222,.92);
+      font-size: 11px;
+      font-weight: 560;
+    }
+
+    /* Lines */
+    .edge{
+      stroke: var(--line);
+      stroke-width: 2.2;
+      fill:none;
+      stroke-linecap:round;
+    }
+    .edge.active{
+      stroke: var(--lineActive);
+      stroke-width: 3.2;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.30));
+    }
+    .arrow{
+      fill: rgba(232,236,255,.40);
+    }
+
+    /* Step badges on edges */
+    .stepBadge{
+      fill: rgba(11,20,48,.85);
+      stroke: rgba(255,255,255,.12);
+      stroke-width: 1;
+      rx: 10; ry: 10;
+    }
+    .stepText{
+      fill: rgba(232,236,255,.92);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .stepGroup.inactive{
+      opacity:.55;
+    }
+    .stepGroup.active .stepBadge{
+      stroke: rgba(255,255,255,.26);
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,.28));
+    }
+
+    /* Moving token */
+    .token{
+      filter: drop-shadow(0 10px 12px rgba(0,0,0,.35));
+    }
+
+    /* Tooltip */
+    .tooltip{
+      position:absolute;
+      min-width: 260px;
+      max-width: 380px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.28);
+      color: rgba(232,236,255,.92);
+      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      line-height: 1.35;
+      pointer-events:none;
+      opacity:0;
+      transform: translateY(6px);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .tooltip.show{
+      opacity:1;
+      transform: translateY(0);
+    }
+    .tooltip b{color: var(--text)}
+    .tooltip .meta{
+      margin-top:6px;
+      color: rgba(166,176,222,.92);
+      font-size: 11px;
+    }
+
+    /* Legend */
+    .legend{
+      position:absolute;
+      left:14px;
+      bottom:12px;
+      right:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+      backdrop-filter: blur(6px);
+    }
+    .legend .left{display:flex; gap:14px; flex-wrap:wrap}
+    .legendItem{
+      display:flex; align-items:center; gap:8px;
+      color:var(--muted); font-size:12px
+    }
+    .key{width:10px;height:10px;border-radius:99px}
+    .key.a{background:rgba(125,211,252,.90)}
+    .key.b{background:rgba(251,191,36,.90)}
+    .key.agent{background:rgba(196,181,253,.92)}
+    .key.mcp{background:rgba(134,239,172,.90)}
+    .key.h{background:rgba(255,255,255,.45)}
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Collaboration Diagram — Play the Story</h1>
+    <div class="sub">
+      Flow: <b>Human → UI → Service0 → Agent → MCP → Service1 → Service2</b>.
+      Each step is numbered; a popup explains what’s happening (placeholder text).
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn primary" id="playBtn">▶ Play</button>
+    <button class="btn" id="resetBtn">↺ Reset</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panel" id="panel">
+    <div class="tooltip" id="tooltip"></div>
+
+    <svg id="svg" viewBox="0 0 1100 560" role="img" aria-label="Collaboration diagram">
+      <defs>
+        <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="9" refY="3.5" orient="auto">
+          <polygon class="arrow" points="0 0, 10 3.5, 0 7"></polygon>
+        </marker>
+      </defs>
+
+      <!-- Nodes (left to right) -->
+      <!-- Human -->
+      <g id="nHuman">
+        <rect class="node human" x="40" y="210" width="170" height="140" rx="18" ry="18"></rect>
+
+        <!-- simple user icon -->
+        <circle cx="125" cy="252" r="22" fill="rgba(255,255,255,.85)"></circle>
+        <path d="M 85 320 C 95 290, 155 290, 165 320 C 165 346, 85 346, 85 320 Z"
+              fill="rgba(255,255,255,.60)"></path>
+
+        <text class="label" x="125" y="370" text-anchor="middle">Human</text>
+        <text class="sublabel" x="125" y="392" text-anchor="middle">User</text>
+      </g>
+
+      <!-- UI -->
+      <g id="nUI">
+        <rect class="node groupA" x="250" y="140" width="190" height="96"></rect>
+        <text class="label" x="345" y="178" text-anchor="middle">UI</text>
+        <text class="sublabel" x="345" y="202" text-anchor="middle">Class</text>
+      </g>
+
+      <!-- Service0 -->
+      <g id="nS0">
+        <rect class="node groupA" x="250" y="324" width="190" height="96"></rect>
+        <text class="label" x="345" y="362" text-anchor="middle">Service0</text>
+        <text class="sublabel" x="345" y="386" text-anchor="middle">Class</text>
+      </g>
+
+      <!-- Agent -->
+      <g id="nAgent">
+        <rect class="node agent" x="500" y="232" width="190" height="96"></rect>
+        <text class="label" x="595" y="270" text-anchor="middle">Agent</text>
+        <text class="sublabel" x="595" y="294" text-anchor="middle">Class</text>
+      </g>
+
+      <!-- MCP -->
+      <g id="nMCP">
+        <rect class="node mcp" x="750" y="232" width="190" height="96"></rect>
+        <text class="label" x="845" y="270" text-anchor="middle">MCP</text>
+        <text class="sublabel" x="845" y="294" text-anchor="middle">Class</text>
+      </g>
+
+      <!-- Service1 -->
+      <g id="nS1">
+        <rect class="node groupB" x="960" y="140" width="190" height="96"></rect>
+        <text class="label" x="1055" y="178" text-anchor="middle">Service1</text>
+        <text class="sublabel" x="1055" y="202" text-anchor="middle">Class</text>
+      </g>
+
+      <!-- Service2 -->
+      <g id="nS2">
+        <rect class="node groupB" x="960" y="324" width="190" height="96"></rect>
+        <text class="label" x="1055" y="362" text-anchor="middle">Service2</text>
+        <text class="sublabel" x="1055" y="386" text-anchor="middle">Class</text>
+      </g>
+
+      <!-- Edges -->
+      <!-- 1: Human -> UI -->
+      <path id="e1" class="edge" marker-end="url(#arrowHead)"
+            d="M 210 260 C 240 245, 235 205, 250 188"></path>
+      <!-- 2: UI -> Service0 -->
+      <path id="e2" class="edge" marker-end="url(#arrowHead)"
+            d="M 345 236 C 345 260, 345 292, 345 324"></path>
+      <!-- 3: Service0 -> Agent -->
+      <path id="e3" class="edge" marker-end="url(#arrowHead)"
+            d="M 440 372 C 470 360, 485 330, 500 306"></path>
+      <!-- 4: Agent -> MCP -->
+      <path id="e4" class="edge" marker-end="url(#arrowHead)"
+            d="M 690 280 C 710 280, 730 280, 750 280"></path>
+      <!-- 5: MCP -> Service1 -->
+      <path id="e5" class="edge" marker-end="url(#arrowHead)"
+            d="M 940 254 C 952 236, 958 220, 960 204"></path>
+      <!-- 6: Service1 -> Service2 -->
+      <path id="e6" class="edge" marker-end="url(#arrowHead)"
+            d="M 1055 236 C 1055 262, 1055 294, 1055 324"></path>
+
+      <!-- Step badges (numbered, near midpoints) -->
+      <g id="s1" class="stepGroup inactive">
+        <rect class="stepBadge" x="222" y="184" width="30" height="22" rx="10" ry="10"></rect>
+        <text class="stepText" x="237" y="199" text-anchor="middle">1</text>
+      </g>
+
+      <g id="s2" class="stepGroup inactive">
+        <rect class="stepBadge" x="330" y="270" width="30" height="22" rx="10" ry="10"></rect>
+        <text class="stepText" x="345" y="285" text-anchor="middle">2</text>
+      </g>
+
+      <g id="s3" class="stepGroup inactive">
+        <rect class="stepBadge" x="456" y="324" width="30" height="22" rx="10" ry="10"></rect>
+        <text class="stepText" x="471" y="339" text-anchor="middle">3</text>
+      </g>
+
+      <g id="s4" class="stepGroup inactive">
+        <rect class="stepBadge" x="716" y="252" width="30" height="22" rx="10" ry="10"></rect>
+        <text class="stepText" x="731" y="267" text-anchor="middle">4</text>
+      </g>
+
+      <g id="s5" class="stepGroup inactive">
+        <rect class="stepBadge" x="938" y="212" width="30" height="22" rx="10" ry="10"></rect>
+        <text class="stepText" x="953" y="227" text-anchor="middle">5</text>
+      </g>
+
+      <g id="s6" class="stepGroup inactive">
+        <rect class="stepBadge" x="1040" y="270" width="30" height="22" rx="10" ry="10"></rect>
+        <text class="stepText" x="1055" y="285" text-anchor="middle">6</text>
+      </g>
+
+      <!-- Moving token -->
+      <circle id="token" class="token" cx="-999" cy="-999" r="7" fill="rgba(232,236,255,.92)"></circle>
+    </svg>
+
+    <div class="legend">
+      <div class="left">
+        <div class="legendItem"><span class="key h"></span> Human</div>
+        <div class="legendItem"><span class="key a"></span> UI + Service0 (same color)</div>
+        <div class="legendItem"><span class="key agent"></span> Agent</div>
+        <div class="legendItem"><span class="key mcp"></span> MCP</div>
+        <div class="legendItem"><span class="key b"></span> Service1 + Service2 (sharper)</div>
+      </div>
+      <div class="legendItem" style="color:rgba(232,236,255,.84)">
+        One “Play” runs the full story with numbered steps + popups.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const svg = document.getElementById('svg');
+  const panel = document.getElementById('panel');
+  const tooltip = document.getElementById('tooltip');
+  const token = document.getElementById('token');
+
+  const playBtn = document.getElementById('playBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const steps = [
+    {
+      num: 1,
+      edgeId: 'e1',
+      badgeId: 's1',
+      title: 'Human → UI',
+      body: 'Placeholder: User initiates an inquiry; UI captures intent and context.'
+    },
+    {
+      num: 2,
+      edgeId: 'e2',
+      badgeId: 's2',
+      title: 'UI → Service0',
+      body: 'Placeholder: UI calls Service0 (API) to validate request and normalize inputs.'
+    },
+    {
+      num: 3,
+      edgeId: 'e3',
+      badgeId: 's3',
+      title: 'Service0 → Agent',
+      body: 'Placeholder: Service0 delegates bounded reasoning/task execution to Agent.'
+    },
+    {
+      num: 4,
+      edgeId: 'e4',
+      badgeId: 's4',
+      title: 'Agent → MCP',
+      body: 'Placeholder: Agent invokes MCP tool gateway to access capabilities safely.'
+    },
+    {
+      num: 5,
+      edgeId: 'e5',
+      badgeId: 's5',
+      title: 'MCP → Service1',
+      body: 'Placeholder: MCP calls Service1 (downstream) to fetch/compute required data.'
+    },
+    {
+      num: 6,
+      edgeId: 'e6',
+      badgeId: 's6',
+      title: 'Service1 → Service2',
+      body: 'Placeholder: Service1 hands off to Service2 for final processing/aggregation.'
+    },
+  ];
+
+  let playing = false;
+  let raf = null;
+
+  function setActive(edgeEl, badgeEl){
+    // reset all
+    steps.forEach(s => {
+      document.getElementById(s.edgeId).classList.remove('active');
+      document.getElementById(s.badgeId).classList.remove('active');
+      document.getElementById(s.badgeId).classList.add('inactive');
+    });
+    edgeEl.classList.add('active');
+    badgeEl.classList.add('active');
+    badgeEl.classList.remove('inactive');
+  }
+
+  function hideTooltip(){
+    tooltip.classList.remove('show');
+  }
+
+  function showTooltipNearBadge(step){
+    const badge = document.getElementById(step.badgeId);
+    const bbox = badge.getBBox(); // SVG coords
+    // Convert SVG coords to screen coords:
+    const pt = svg.createSVGPoint();
+    pt.x = bbox.x + bbox.width + 10;
+    pt.y = bbox.y - 6;
+
+    const ctm = badge.getScreenCTM();
+    const screen = pt.matrixTransform(ctm);
+
+    // Place tooltip within panel bounds
+    const panelRect = panel.getBoundingClientRect();
+    const x = Math.min(screen.x - panelRect.left, panelRect.width - 420);
+    const y = Math.max(12, Math.min(screen.y - panelRect.top, panelRect.height - 130));
+
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+    tooltip.innerHTML = `<b>Step ${step.num}: ${step.title}</b><div class="meta">${step.body}</div>`;
+    tooltip.classList.add('show');
+  }
+
+  function moveTokenAlongPath(pathEl, durationMs){
+    return new Promise((resolve) => {
+      const len = pathEl.getTotalLength();
+      const start = performance.now();
+
+      function tick(now){
+        const t = Math.min(1, (now - start) / durationMs);
+        const p = pathEl.getPointAtLength(t * len);
+        token.setAttribute('cx', p.x);
+        token.setAttribute('cy', p.y);
+
+        // fade in/out a bit
+        const opacity = t < 0.12 ? (t/0.12) : (t > 0.88 ? (1 - (t-0.88)/0.12) : 1);
+        token.setAttribute('opacity', String(Math.max(0, Math.min(1, opacity))));
+
+        if (t < 1){
+          raf = requestAnimationFrame(tick);
+        } else {
+          resolve();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    });
+  }
+
+  async function playStory(){
+    if (playing) return;
+    playing = true;
+    playBtn.disabled = true;
+    resetBtn.disabled = true;
+
+    for (const step of steps){
+      const edgeEl = document.getElementById(step.edgeId);
+      const badgeEl = document.getElementById(step.badgeId);
+
+      setActive(edgeEl, badgeEl);
+      showTooltipNearBadge(step);
+
+      // Longer duration for vertical edges; otherwise normal
+      const isVertical = step.edgeId === 'e2' || step.edgeId === 'e6';
+      const duration = isVertical ? 1200 : 1000;
+
+      await moveTokenAlongPath(edgeEl, duration);
+
+      // small pause between steps
+      await new Promise(r => setTimeout(r, 260));
+    }
+
+    // end state
+    hideTooltip();
+    token.setAttribute('cx', -999);
+    token.setAttribute('cy', -999);
+
+    playing = false;
+    playBtn.disabled = false;
+    resetBtn.disabled = false;
+  }
+
+  function reset(){
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+    playing = false;
+    playBtn.disabled = false;
+    resetBtn.disabled = false;
+
+    steps.forEach(s => {
+      document.getElementById(s.edgeId).classList.remove('active');
+      const g = document.getElementById(s.badgeId);
+      g.classList.remove('active');
+      g.classList.add('inactive');
+    });
+    hideTooltip();
+    token.setAttribute('cx', -999);
+    token.setAttribute('cy', -999);
+    token.setAttribute('opacity', '1');
+  }
+
+  playBtn.addEventListener('click', playStory);
+  resetBtn.addEventListener('click', reset);
+
+  // Start in reset state
+  reset();
+})();
+</script>
+</body>
+</html>
