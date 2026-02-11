@@ -1138,6 +1138,8 @@
             promises.push(captureSequenceView());
         }
 
+        promises.push(captureLogsView());
+
         Promise.all(promises).then(function(canvases) {
             var totalHeight = 60;
             canvases.forEach(function(c) { totalHeight += c.height + 20; });
@@ -1223,6 +1225,40 @@
 
             setTimeout(function() {
                 html2canvas(clone, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas) {
+                    resolve(canvas);
+                });
+            }, 300);
+        });
+    }
+
+    function captureLogsView() {
+        return new Promise(function(resolve) {
+            var container = document.createElement('div');
+            container.style.cssText = 'width:1160px;background:' + getComputedStyle(document.body).getPropertyValue('--bg-color').trim() + ';padding:0;font-family:Consolas,monospace;font-size:13px;';
+
+            var label = document.createElement('div');
+            label.style.cssText = 'padding:8px 15px;font-size:14px;font-weight:bold;color:' + getComputedStyle(document.body).getPropertyValue('--text-main').trim() + ';font-family:Segoe UI,sans-serif;margin-top:10px;';
+            label.textContent = 'Steps / Log';
+            dom.exportArea.appendChild(label);
+
+            var entries = dom.logPane.querySelectorAll('.log-entry');
+            entries.forEach(function(entry) {
+                var clone = entry.cloneNode(true);
+                clone.style.animation = 'none';
+                container.appendChild(clone);
+            });
+
+            if (entries.length === 0) {
+                var empty = document.createElement('div');
+                empty.style.cssText = 'padding:10px 15px;color:#666;font-style:italic;';
+                empty.textContent = 'No steps recorded.';
+                container.appendChild(empty);
+            }
+
+            dom.exportArea.appendChild(container);
+
+            setTimeout(function() {
+                html2canvas(container, { backgroundColor: null, scale: 2, useCORS: true }).then(function(canvas) {
                     resolve(canvas);
                 });
             }, 300);
