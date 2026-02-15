@@ -23,7 +23,14 @@ from (String): The id of the source node.to (String): The id of the destination 
   "to": "backend",
   "text": "API Call: Get User Profile"
 }
-from (String): The id of the node where the red dot starts.to (String): The id of the node where the red dot ends.Note: When the dot arrives here, a step number badge (e.g., ①) is added to this box.text (String): The description of this step. This text is logged in the bottom pane and displayed briefly as a popup.Minimal ExampleHere is a copy-pasteable example of a user talking to a database.JSON{
+from (String): The id of the node where the red dot starts.to (String): The id of the node where the red dot ends.Note: When the dot arrives here, a step number badge (e.g., ①) is added to this box.text (String): The description of this step. This text is logged in the bottom pane and displayed briefly as a popup.popUp (Object, Optional): A popup notification that appears when this step completes.JSON{
+  "popUp": { "type": "alert", "msg": "Rate limit approaching 80%" }
+}
+popUp.type (String): The popup style. Supported values:
+  "alert": Amber/yellow triangle with exclamation mark. Use for warnings.
+  "issue": Red stop sign with exclamation mark. Use for errors or failures.
+  "amplify": Green circle with checkmark. Use for success confirmations.
+popUp.msg (String): The message text displayed in the popup toast and in the log pane.Minimal ExampleHere is a copy-pasteable example of a user talking to a database.JSON{
     "title": "Simple Query Flow",
     "nodes": [
         { 
