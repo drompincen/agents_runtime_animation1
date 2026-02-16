@@ -2,7 +2,7 @@
 //JAVA 17+
 //DEPS org.springframework.boot:spring-boot-starter-web:3.4.2
 
-package com.drom.archviz;
+package io.github.drompincen.archviz;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

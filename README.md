@@ -172,7 +172,7 @@ That's it — start the app with `mvn spring-boot:run` and diagrams saved via th
 .
 ├── ArchViz.java                             # jbang single-file runner
 ├── pom.xml                                  # Maven build (Spring Boot 3.4.2, Java 17)
-├── src/main/java/com/drom/archviz/
+├── src/main/java/io/github/drompincen/archviz/
 │   ├── ArchVizApplication.java              # Spring Boot main class
 │   ├── JsonListController.java              # GET /json/ directory listing
 │   └── HtmlAccessLogFilter.java             # Logs every .html page access
