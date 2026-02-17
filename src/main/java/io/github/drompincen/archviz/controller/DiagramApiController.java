@@ -28,13 +28,13 @@ public class DiagramApiController {
 
     @GetMapping
     public List<DiagramSummary> listDiagrams(
-            @RequestParam(required = false) String tag,
-            @RequestParam(required = false) String query) {
+            @RequestParam(name = "tag", required = false) String tag,
+            @RequestParam(name = "query", required = false) String query) {
         return diagramService.listAll(Optional.ofNullable(tag), Optional.ofNullable(query));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Diagram> getDiagram(@PathVariable String id) {
+    public ResponseEntity<Diagram> getDiagram(@PathVariable("id") String id) {
         log.info("DOWNLOAD | id={}", id);
         return diagramService.getById(id)
                 .map(d -> {
@@ -56,7 +56,7 @@ public class DiagramApiController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Diagram> updateDiagram(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestBody DiagramUpdateRequest request) {
         return diagramService.update(id, request)
                 .map(d -> {

@@ -1,6 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 17+
-//DEPS org.springframework.boot:spring-boot-starter-web:3.4.2
+//COMPILE_OPTIONS -parameters
+//DEPS org.springframework.boot:spring-boot-starter-web:3.3.1
 
 package io.github.drompincen.archviz;
 
@@ -67,26 +68,30 @@ public class ArchViz {
 
     @Bean
     public OncePerRequestFilter htmlAccessLogFilter() {
-        return new OncePerRequestFilter() {
-            @Override
-            protected void doFilterInternal(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            FilterChain filterChain) throws ServletException, IOException {
-                filterChain.doFilter(request, response);
+        return new HtmlAccessLogFilter();
+    }
 
-                if (request.getRequestURI().endsWith(".html")) {
-                    String ip = request.getHeader("X-Forwarded-For");
-                    if (ip == null || ip.isBlank()) {
-                        ip = request.getRemoteAddr();
-                    }
-                    log.info("HTML access | {} | {} | {} | {}",
-                            ip,
-                            request.getMethod(),
-                            request.getRequestURI(),
-                            response.getStatus());
+    static class HtmlAccessLogFilter extends OncePerRequestFilter {
+        private static final Logger filterLog = LoggerFactory.getLogger(HtmlAccessLogFilter.class);
+
+        @Override
+        protected void doFilterInternal(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        FilterChain filterChain) throws ServletException, IOException {
+            filterChain.doFilter(request, response);
+
+            if (request.getRequestURI().endsWith(".html")) {
+                String ip = request.getHeader("X-Forwarded-For");
+                if (ip == null || ip.isBlank()) {
+                    ip = request.getRemoteAddr();
                 }
+                filterLog.info("HTML access | {} | {} | {} | {}",
+                        ip,
+                        request.getMethod(),
+                        request.getRequestURI(),
+                        response.getStatus());
             }
-        };
+        }
     }
 
     @GetMapping(value = "/json/", produces = "text/html")
@@ -123,8 +128,8 @@ public class ArchViz {
 
     @GetMapping("/api/diagrams")
     public List<ObjectNode> listDiagrams(
-            @RequestParam(required = false) String tag,
-            @RequestParam(required = false) String query) {
+            @RequestParam(name = "tag", required = false) String tag,
+            @RequestParam(name = "query", required = false) String query) {
 
         // DB-persisted diagrams (summaries without flow)
         Stream<ObjectNode> dbStream = diagramStore.values().stream()
@@ -142,7 +147,7 @@ public class ArchViz {
     }
 
     @GetMapping("/api/diagrams/{id}")
-    public ResponseEntity<ObjectNode> getDiagram(@PathVariable String id) {
+    public ResponseEntity<ObjectNode> getDiagram(@PathVariable("id") String id) {
         log.info("DOWNLOAD | id={}", id);
 
         // Check DB first
@@ -196,7 +201,7 @@ public class ArchViz {
 
     @PutMapping("/api/diagrams/{id}")
     public ResponseEntity<ObjectNode> updateDiagram(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestBody JsonNode request) {
 
         ObjectNode existing = diagramStore.get(id);
