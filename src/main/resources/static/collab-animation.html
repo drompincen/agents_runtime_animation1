@@ -22,6 +22,11 @@
             --tag-core-bg: #154360; --tag-core-border: #3498db; --tag-core-text: #ecf0f1;
             --tag-agent-bg: #4a235a; --tag-agent-border: #9b59b6; --tag-agent-text: #ecf0f1;
             --tag-external-bg: #34495e; --tag-external-border: #7f8c8d; --tag-external-text: #bdc3c7;
+
+            --tag-aws-bg: #3d2800; --tag-aws-border: #ff9900; --tag-aws-text: #ffd080;
+            --tag-internal-bg: #0d3d3d; --tag-internal-border: #2bb5b5; --tag-internal-text: #80e0e0;
+            --tag-observability-bg: #2d1a3d; --tag-observability-border: #a855f7; --tag-observability-text: #d4a8ff;
+            --tag-data-bg: #0d2d3d; --tag-data-border: #06b6d4; --tag-data-text: #80d8e8;
         }
 
         body.light-theme {
@@ -39,6 +44,11 @@
             --tag-core-bg: #e3f2fd; --tag-core-border: #3498db; --tag-core-text: #333;
             --tag-agent-bg: #f3e5f5; --tag-agent-border: #9b59b6; --tag-agent-text: #333;
             --tag-external-bg: #eceff1; --tag-external-border: #7f8c8d; --tag-external-text: #555;
+
+            --tag-aws-bg: #fff3e0; --tag-aws-border: #ff9900; --tag-aws-text: #663d00;
+            --tag-internal-bg: #e0f7fa; --tag-internal-border: #2bb5b5; --tag-internal-text: #004d40;
+            --tag-observability-bg: #f3e5f5; --tag-observability-border: #a855f7; --tag-observability-text: #4a148c;
+            --tag-data-bg: #e0f7fa; --tag-data-border: #06b6d4; --tag-data-text: #00606d;
         }
 
         body {
@@ -159,6 +169,14 @@
         .seq-node.tag-agent .seq-head-text { fill: var(--tag-agent-text); }
         .seq-node.tag-external .seq-head-rect { fill: var(--tag-external-bg); stroke: var(--tag-external-border); stroke-dasharray: 4,2; }
         .seq-node.tag-external .seq-head-text { fill: var(--tag-external-text); }
+        .seq-node.tag-aws .seq-head-rect { fill: var(--tag-aws-bg); stroke: var(--tag-aws-border); }
+        .seq-node.tag-aws .seq-head-text { fill: var(--tag-aws-text); }
+        .seq-node.tag-internal .seq-head-rect { fill: var(--tag-internal-bg); stroke: var(--tag-internal-border); }
+        .seq-node.tag-internal .seq-head-text { fill: var(--tag-internal-text); }
+        .seq-node.tag-observability .seq-head-rect { fill: var(--tag-observability-bg); stroke: var(--tag-observability-border); }
+        .seq-node.tag-observability .seq-head-text { fill: var(--tag-observability-text); }
+        .seq-node.tag-data .seq-head-rect { fill: var(--tag-data-bg); stroke: var(--tag-data-border); }
+        .seq-node.tag-data .seq-head-text { fill: var(--tag-data-text); }
 
         #notebook-widget {
             position: absolute; top: 20px; right: 20px; width: 680px; max-height: 700px;
@@ -274,7 +292,54 @@
         .node.tag-core { background: var(--tag-core-bg); border-color: var(--tag-core-border); color: var(--tag-core-text); }
         .node.tag-agent { background: var(--tag-agent-bg); border-color: var(--tag-agent-border); color: var(--tag-agent-text); }
         .node.tag-external { background: var(--tag-external-bg); border-color: var(--tag-external-border); color: var(--tag-external-text); border-style: dashed; }
+        .node.tag-aws { background: var(--tag-aws-bg); border-color: var(--tag-aws-border); color: var(--tag-aws-text); }
+        .node.tag-internal { background: var(--tag-internal-bg); border-color: var(--tag-internal-border); color: var(--tag-internal-text); }
+        .node.tag-observability { background: var(--tag-observability-bg); border-color: var(--tag-observability-border); color: var(--tag-observability-text); }
+        .node.tag-data { background: var(--tag-data-bg); border-color: var(--tag-data-border); color: var(--tag-data-text); }
+
         .node.type-database { border-radius: 0 0 12px 12px; border-top-width: 4px; }
+        .node.type-gateway { border-radius: 20px; }
+        .node.type-firewall { border: 4px double; border-color: #e74c3c; }
+        .node.type-lambda { border-radius: 4px 4px 16px 16px; border-bottom: 4px solid #f90; }
+        .node.type-queue { border-radius: 0 24px 24px 0; }
+        .node.type-cache { border-radius: 12px; border-style: dotted; }
+        .node.type-cdn { border-radius: 20px; border-style: dashed; }
+        .node.type-dashboard { border-top: 4px solid var(--highlight); }
+        .node.type-storage { border-radius: 4px; border-bottom-width: 4px; }
+        .node.type-vpn { border-radius: 4px; border-style: double; }
+
+        /* Zones */
+        .zone {
+            position: absolute; border-radius: 8px; pointer-events: none;
+            box-sizing: border-box; transition: opacity 0.3s;
+        }
+        body.is-editing .zone { pointer-events: auto; cursor: grab; }
+        body.is-editing .zone:active { cursor: grabbing; }
+        .zone-label {
+            position: absolute; top: 6px; left: 10px;
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            opacity: 0.8; pointer-events: none;
+        }
+        .zone-cloud      { border: 2px dashed #3b82f6; background: rgba(59,130,246,0.06); z-index: 2; }
+        .zone-cloud .zone-label { color: #3b82f6; }
+        .zone-on-prem     { border: 2px solid #6b7280; background: rgba(107,114,128,0.06); z-index: 2; }
+        .zone-on-prem .zone-label { color: #9ca3af; }
+        .zone-vpc         { border: 2px dashed #22c55e; background: rgba(34,197,94,0.06); z-index: 3; }
+        .zone-vpc .zone-label { color: #22c55e; }
+        .zone-subnet      { border: 2px dotted #86efac; background: rgba(134,239,172,0.04); z-index: 4; }
+        .zone-subnet .zone-label { color: #86efac; }
+        .zone-edge        { border: 2px dashed #eab308; background: rgba(234,179,8,0.06); z-index: 2; }
+        .zone-edge .zone-label { color: #eab308; }
+        .zone-dmz         { border: 2px solid #ef4444; background: rgba(239,68,68,0.06); z-index: 3; }
+        .zone-dmz .zone-label { color: #ef4444; }
+        .zone-region      { border: 1px solid rgba(59,130,246,0.25); background: rgba(59,130,246,0.03); z-index: 1; }
+        .zone-region .zone-label { color: rgba(59,130,246,0.5); }
+        .zone-az          { border: 1px dashed rgba(59,130,246,0.2); background: rgba(59,130,246,0.02); z-index: 1; }
+        .zone-az .zone-label { color: rgba(59,130,246,0.4); }
+        .zone-k8s-cluster { border: 2px solid #3b82f6; background: rgba(59,130,246,0.05); z-index: 3; }
+        .zone-k8s-cluster .zone-label { color: #3b82f6; }
+        .zone-namespace   { border: 2px dashed #60a5fa; background: rgba(96,165,250,0.04); z-index: 4; }
+        .zone-namespace .zone-label { color: #60a5fa; }
 
         .log-entry { padding: 6px 15px; border-bottom: 1px solid #2d2d2d; display: flex; gap: 10px; align-items: baseline; animation: fadeIn 0.3s ease; }
         body.light-theme .log-entry { border-color: #eee; }
@@ -434,6 +499,20 @@
         </div>
 
         <div class="divider"></div>
+        <div class="controls-group phase-controls" id="phase-controls" style="display:none;">
+            <label style="font-size:0.8rem;">Phase:</label>
+            <input type="range" id="phase-slider" min="0" max="0" value="0" step="1" style="width:100px;">
+            <span id="phase-label-display" style="font-size:0.8rem; min-width:60px;">All</span>
+        </div>
+
+        <div class="divider"></div>
+        <div class="controls-group" id="flow-controls" style="display:none;">
+            <select id="flow-selector">
+                <option value="__default__">-- Default Sequence --</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
 
         <div class="controls-group">
             <label class="toggle-label" style="color:var(--highlight); border:1px solid #333; padding:2px 6px; border-radius:4px;">
@@ -480,6 +559,7 @@
 
             <div id="preview-canvas">
                 <div id="phase-display"></div>
+                <div id="zones-container"></div>
                 <svg class="connections-layer" id="connections-layer"></svg>
                 <div id="nodes-container"></div>
                 <div id="particle" class="message-particle"></div>
@@ -545,9 +625,22 @@
 
     const ICONS = {
         user: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
+        human: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
         database: '<path d="M12 2C6.48 2 2 3.34 2 5v14c0 1.66 4.48 3 10 3s10-1.34 10-3V5c0-1.66-4.48-3-10-3zm0 12c-3.53 0-6.43-.85-7.85-2.09C5.36 13.56 8.44 14.5 12 14.5s6.64-.94 7.85-2.59c-1.42 1.24-4.32 2.09-7.85 2.09z"/>',
         service: '<path d="M12 2L2 7l10 5 10-5-10-5zm0 9l-10-5v2l10 5 10-5v-2l-10 5zm0 4.5l-10-5v2l10 5 10-5v-2l-10 5z"/>',
         agent: '<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1c1.1 0 2 .9 2 2v6h2v2h-2v2c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2v-2H4v-2h2V9c0-1.1.9-2 2-2h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M9 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2m6 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>',
+        fargate: '<path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18L18.36 7.5 12 10.82 5.64 7.5 12 4.18zM5 9.06l6 3.31v6.57L5 15.63V9.06z"/><circle cx="8" cy="13" r="1.2"/><circle cx="16" cy="13" r="1.2"/>',
+        lambda: '<path d="M4 20h3.5l4.5-9.5L16.5 20H20L13 4h-3L4 20zm6.5-2L8 12.5 10 8l4.5 10h-4z"/>',
+        ec2: '<path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm3 2h6v2H9V8zm0 4h6v2H9v-2z"/>',
+        gateway: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>',
+        'load-balancer': '<path d="M12 2L4 7v2h16V7L12 2zm-6 9v2h4v6l2 3 2-3v-6h4v-2H6zm6-5.5L16 8H8l4-2.5z"/>',
+        cdn: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,2"/><path d="M12 3c-2 3-3 6-3 9s1 6 3 9m0-18c2 3 3 6 3 9s-1 6-3 9M3 12h18"/>',
+        firewall: '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>',
+        cache: '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3,2"/>',
+        queue: '<path d="M3 6h14a4 4 0 0 1 0 8H3V6zm0 2v4h14a2 2 0 0 0 0-4H3z"/><path d="M6 9h2v2H6zm4 0h2v2h-2zm4 0h2v2h-2z"/>',
+        storage: '<path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/>',
+        dashboard: '<path d="M3 3h8v6H3V3zm0 8h8v10H3V11zm10-8h8v10h-8V3zm0 12h8v6h-8v-6z"/>',
+        vpn: '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/><path d="M10 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2"/>',
         default: '<path d="M3 3h18v18H3z"/>'
     };
 
@@ -584,6 +677,7 @@
         container: document.getElementById('nodes-container'),
         svgLayer: document.getElementById('connections-layer'),
         particle: document.getElementById('particle'),
+        zonesContainer: document.getElementById('zones-container'),
         title: document.getElementById('phase-display'),
         editorPane: document.getElementById('left-sidebar'),
         notebookWidget: document.getElementById('notebook-widget'),
@@ -605,6 +699,11 @@
         chkSequenceMode: document.getElementById('chk-sequence-mode'),
         chkLightMode: document.getElementById('chk-light-mode'),
         jsonSelector: document.getElementById('json-selector'),
+        phaseControls: document.getElementById('phase-controls'),
+        phaseSlider: document.getElementById('phase-slider'),
+        phaseLabelDisplay: document.getElementById('phase-label-display'),
+        flowControls: document.getElementById('flow-controls'),
+        flowSelector: document.getElementById('flow-selector'),
 
         resizer: document.getElementById('pane-resizer'),
         centerStage: document.getElementById('center-stage'),
@@ -629,8 +728,12 @@
     let stepIndex = 0;
     let timer = null;
     let nodeMap = {};
+    let zoneMap = {};
     let sequenceGroups = [];
     let savedLogHeight = 200;
+    let selectedPhase = Infinity;
+    let selectedFlowId = '__default__';
+    let activeSequence = [];
     let currentDiagramMeta = null;
     var DIAGRAM_META = {};
 
@@ -817,6 +920,29 @@
         return out;
     }
 
+    function getPhaseIndex(phaseId) {
+        if (!graph.phases || !phaseId) return -1;
+        return graph.phases.findIndex(function(p) { return p.id === phaseId; });
+    }
+
+    function isVisibleInPhase(item) {
+        if (selectedPhase === Infinity) return true;
+        if (!item.phase) return true;
+        var idx = getPhaseIndex(item.phase);
+        return idx >= 0 && idx <= selectedPhase;
+    }
+
+    function resolveActiveSequence() {
+        var seq;
+        if (selectedFlowId !== '__default__' && graph.flows) {
+            var flow = graph.flows.find(function(f) { return f.id === selectedFlowId; });
+            seq = flow ? (flow.sequence || []) : (graph.sequence || []);
+        } else {
+            seq = graph.sequence || [];
+        }
+        activeSequence = seq.filter(function(step) { return isVisibleInPhase(step); });
+    }
+
     function render() {
         try {
             var cleanJson = stripJsonComments(dom.input.value);
@@ -829,14 +955,74 @@
             dom.btnUpdate.innerText = "Update Diagram";
 
             nodeMap = {};
+            zoneMap = {};
             dom.title.innerText = graph.title || "";
+
+            // Phase controls
+            if (graph.phases && graph.phases.length > 0) {
+                dom.phaseControls.style.display = '';
+                dom.phaseSlider.max = graph.phases.length - 1;
+                if (selectedPhase !== Infinity) {
+                    dom.phaseSlider.value = Math.min(selectedPhase, graph.phases.length - 1);
+                    dom.phaseLabelDisplay.textContent = graph.phases[dom.phaseSlider.value].label || graph.phases[dom.phaseSlider.value].id;
+                } else {
+                    dom.phaseSlider.value = graph.phases.length - 1;
+                    selectedPhase = graph.phases.length - 1;
+                    dom.phaseLabelDisplay.textContent = graph.phases[selectedPhase].label || graph.phases[selectedPhase].id;
+                }
+            } else {
+                dom.phaseControls.style.display = 'none';
+                selectedPhase = Infinity;
+            }
+
+            // Flow controls
+            if (graph.flows && graph.flows.length > 0) {
+                dom.flowControls.style.display = '';
+                var prevVal = dom.flowSelector.value;
+                dom.flowSelector.innerHTML = '<option value="__default__">-- Default Sequence --</option>';
+                graph.flows.forEach(function(f) {
+                    var opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.name || f.id;
+                    dom.flowSelector.appendChild(opt);
+                });
+                dom.flowSelector.value = prevVal;
+                if (!dom.flowSelector.value) dom.flowSelector.value = '__default__';
+                selectedFlowId = dom.flowSelector.value;
+            } else {
+                dom.flowControls.style.display = 'none';
+                selectedFlowId = '__default__';
+            }
+
+            resolveActiveSequence();
 
             var notesText = (graph.notes || "").replace(/\\n/g, "\n");
             dom.notebook.textContent = notesText;
 
+            // Render zones
+            dom.zonesContainer.innerHTML = '';
+            (graph.zones || []).forEach(function(z) {
+                if (!isVisibleInPhase(z)) return;
+                var zEl = document.createElement('div');
+                zEl.className = 'zone zone-' + (z.type || 'cloud');
+                zEl.id = 'zone-' + z.id;
+                zEl.style.left = z.x + 'px';
+                zEl.style.top = z.y + 'px';
+                zEl.style.width = z.w + 'px';
+                zEl.style.height = z.h + 'px';
+                var labelEl = document.createElement('div');
+                labelEl.className = 'zone-label';
+                labelEl.textContent = z.label || z.id;
+                zEl.appendChild(labelEl);
+                zEl.addEventListener('mousedown', handleZoneDragStart);
+                dom.zonesContainer.appendChild(zEl);
+                zoneMap[z.id] = Object.assign({}, z, { el: zEl });
+            });
+
             dom.container.innerHTML = '';
 
             (graph.nodes || []).forEach(function(n) {
+                if (!isVisibleInPhase(n)) return;
                 var el = document.createElement('div');
                 el.className = 'node type-' + (n.type || 'default') + ' tag-' + (n.tag || 'core');
                 el.id = 'node-' + n.id;
@@ -909,7 +1095,8 @@
         dom.svgLayer.innerHTML = '';
         if (!graph.connections) return;
 
-        var dedupedConns = deduplicateConnections(graph.connections);
+        var visibleConns = graph.connections.filter(function(conn) { return isVisibleInPhase(conn); });
+        var dedupedConns = deduplicateConnections(visibleConns);
 
         var occupiedMidpoints = [];
 
@@ -956,8 +1143,8 @@
 
     function renderSequenceView() {
         var allNodes = graph.nodes || [];
-        var visibleNodes = allNodes.filter(function(n) { return !n.skipSequence; });
-        var sequence = graph.sequence || [];
+        var visibleNodes = allNodes.filter(function(n) { return !n.skipSequence && isVisibleInPhase(n); });
+        var sequence = activeSequence;
         sequenceGroups = [];
 
         if (visibleNodes.length === 0) {
@@ -1060,6 +1247,22 @@
         if (dom.chkSequenceMode.checked) renderSequenceView();
     });
 
+    dom.phaseSlider.addEventListener('input', function() {
+        selectedPhase = parseInt(dom.phaseSlider.value);
+        if (graph.phases && graph.phases[selectedPhase]) {
+            dom.phaseLabelDisplay.textContent = graph.phases[selectedPhase].label || graph.phases[selectedPhase].id;
+        }
+        resetAnimation(true);
+        render();
+    });
+
+    dom.flowSelector.addEventListener('change', function() {
+        selectedFlowId = dom.flowSelector.value;
+        resolveActiveSequence();
+        resetAnimation(true);
+        if (dom.chkSequenceMode.checked) renderSequenceView();
+    });
+
     var isResizing = false;
     dom.resizer.addEventListener('mousedown', function() {
         isResizing = true;
@@ -1119,6 +1322,43 @@
         dragTarget = null;
         document.removeEventListener('mousemove', handleDragMove);
         document.removeEventListener('mouseup', handleDragEnd);
+    }
+
+    // Zone drag support
+    var zoneDragTarget = null, zoneDragOffset = { x: 0, y: 0 };
+    function handleZoneDragStart(e) {
+        if (!dom.chkEditMode.checked || isPlaying || dom.chkSequenceMode.checked) return;
+        zoneDragTarget = e.currentTarget;
+        var r = zoneDragTarget.getBoundingClientRect();
+        zoneDragOffset.x = e.clientX - r.left;
+        zoneDragOffset.y = e.clientY - r.top;
+        e.stopPropagation();
+        document.addEventListener('mousemove', handleZoneDragMove);
+        document.addEventListener('mouseup', handleZoneDragEnd);
+    }
+    function handleZoneDragMove(e) {
+        if (!zoneDragTarget) return;
+        var cRect = document.getElementById('preview-canvas').getBoundingClientRect();
+        var nx = e.clientX - cRect.left - zoneDragOffset.x;
+        var ny = e.clientY - cRect.top - zoneDragOffset.y;
+        nx = Math.round(nx / 10) * 10;
+        ny = Math.round(ny / 10) * 10;
+        zoneDragTarget.style.left = nx + 'px';
+        zoneDragTarget.style.top = ny + 'px';
+    }
+    function handleZoneDragEnd() {
+        if (zoneDragTarget) {
+            var id = zoneDragTarget.id.replace('zone-', '');
+            var zoneItem = (graph.zones || []).find(function(z) { return z.id === id; });
+            if (zoneItem) {
+                zoneItem.x = parseInt(zoneDragTarget.style.left);
+                zoneItem.y = parseInt(zoneDragTarget.style.top);
+                dom.input.value = JSON.stringify(graph, null, 4);
+            }
+        }
+        zoneDragTarget = null;
+        document.removeEventListener('mousemove', handleZoneDragMove);
+        document.removeEventListener('mouseup', handleZoneDragEnd);
     }
 
     function clearLog() {
@@ -1235,7 +1475,7 @@
         isPlaying = false;
         dom.particle.style.display = 'none';
 
-        var seq = graph.sequence || [];
+        var seq = activeSequence;
 
         clearLog();
         clearBadges();
@@ -1263,7 +1503,7 @@
             isPlaying = false;
             dom.btnPlay.innerHTML = "&#9654; Resume";
         } else {
-            if (stepIndex === 0 || stepIndex >= (graph.sequence || []).length) {
+            if (stepIndex === 0 || stepIndex >= activeSequence.length) {
                 stepIndex = 0;
                 clearLog();
                 clearBadges();
@@ -1277,7 +1517,7 @@
 
     function runSequence() {
         if (!isPlaying) return;
-        var seq = graph.sequence || [];
+        var seq = activeSequence;
         if (stepIndex >= seq.length) {
             isPlaying = false;
             dom.btnPlay.innerHTML = "&#8634; Replay";

@@ -13,7 +13,7 @@
 
     <groupId>io.github.drompincen</groupId>
     <artifactId>archviz</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <name>Architecture Visualizer</name>
     <description>DROM Architecture Visualizer - animated architecture diagrams</description>
     <url>https://github.com/drompincen/agents_runtime_animation1</url>

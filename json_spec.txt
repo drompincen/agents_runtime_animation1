@@ -1,58 +1,272 @@
-This guide details the JSON specification used to configure the Phases architecture animator. The JSON is divided into four main sections: Metadata, Nodes, Connections, and Sequence.1. Root ObjectThe root of the JSON object controls the global settings of the diagram.JSON{
-  "title": "Phase 1: Legacy Migration",
-  "nodes": [ ... ],
-  "connections": [ ... ],
-  "sequence": [ ... ]
-}
-title (String): The text displayed at the top-left of the canvas (e.g., "Phase 1: Architecture").2. The nodes ArrayThis array defines the boxes (components) on the canvas. Each object represents one component.JSON{
-  "id": "user_1",
-  "type": "user",
-  "tag": "external",
-  "label": "Mobile App User",
-  "x": 50,
-  "y": 100,
-  "w": 120,
-  "h": 80
-}
-PropertyTypeDescriptionidStringRequired. A unique identifier for the node (e.g., "db-1", "frontend"). This is used by Connections and Sequence to reference this box.labelStringThe text displayed inside the box.xNumberThe horizontal position (pixels) from the left edge.yNumberThe vertical position (pixels) from the top edge.wNumberThe width of the box in pixels.hNumberThe height of the box in pixels.typeStringDetermines the Icon shown inside the box.tagStringDetermines the Color Scheme (border/background).Supported Values for type (Icons)"user": A person icon."database": A cylinder/database icon."service": A stack/server icon."agent": A robot/AI head icon."default": A generic box icon.Supported Values for tag (Colors)"legacy": Red/Pink. Used for old systems you are deprecating."new": Green. Used for new architecture or target state."core": Blue. Used for standard infrastructure."agent": Purple. Used for AI Agents or LLMs."external": Gray (Dashed). Used for users or third-party systems.3. The connections ArrayThis array draws the static dashed lines between boxes. These lines represent network connectivity or data flow paths.JSON{
-  "from": "user_1",
-  "to": "frontend"
-}
-from (String): The id of the source node.to (String): The id of the destination node.4. The sequence ArrayThis array defines the animation steps. The "Play" button iterates through this list in order.JSON{
-  "from": "frontend",
-  "to": "backend",
-  "text": "API Call: Get User Profile"
-}
-from (String): The id of the node where the red dot starts.to (String): The id of the node where the red dot ends.Note: When the dot arrives here, a step number badge (e.g., ①) is added to this box.text (String): The description of this step. This text is logged in the bottom pane and displayed briefly as a popup.popUp (Object, Optional): A popup notification that appears when this step completes.JSON{
-  "popUp": { "type": "alert", "msg": "Rate limit approaching 80%" }
-}
-popUp.type (String): The popup style. Supported values:
-  "alert": Amber/yellow triangle with exclamation mark. Use for warnings.
-  "issue": Red stop sign with exclamation mark. Use for errors or failures.
-  "amplify": Green circle with checkmark. Use for success confirmations.
-popUp.msg (String): The message text displayed in the popup toast and in the log pane.Minimal ExampleHere is a copy-pasteable example of a user talking to a database.JSON{
+DROM Architecture Visualizer — JSON Specification
+===================================================
+
+This guide details the JSON specification used to configure the architecture
+visualizer. The JSON is divided into these sections: Metadata, Nodes,
+Connections, Sequence, Zones, Phases, and Flows.
+
+
+1. Root Object
+--------------
+
+The root of the JSON object controls the global settings of the diagram.
+
+  {
+    "title": "Order Platform — Phased Architecture",
+    "notes": "Project notes here.\nUse \\n for line breaks.",
+    "phases": [ ... ],
+    "zones": [ ... ],
+    "nodes": [ ... ],
+    "connections": [ ... ],
+    "sequence": [ ... ],
+    "flows": [ ... ]
+  }
+
+  title   (String)  The text displayed at the top-left of the canvas.
+  notes   (String)  Freeform project notes displayed in the notebook widget.
+                    Use \n for line breaks.
+
+
+2. The nodes Array
+------------------
+
+Defines the boxes (components) on the canvas.
+
+  {
+    "id": "order-svc",
+    "type": "fargate",
+    "tag": "core",
+    "label": "Order\nService",
+    "x": 560,
+    "y": 100,
+    "w": 130,
+    "h": 85,
+    "status": "ready",
+    "phase": "processing"
+  }
+
+  Property  Type    Description
+  --------  ------  -----------------------------------------------------------
+  id        String  Required. Unique identifier for the node.
+  label     String  Text displayed inside the box. Use \n for line breaks.
+  x         Number  Horizontal position (pixels) from the left edge.
+  y         Number  Vertical position (pixels) from the top edge.
+  w         Number  Width of the box in pixels.
+  h         Number  Height of the box in pixels.
+  type      String  Determines the icon shown inside the box (see below).
+  tag       String  Determines the color scheme (see below).
+  status    String  Optional. "ready" (green check) or "wip" (orange hourglass).
+  phase     String  Optional. Phase ID — node only appears when that phase
+                    is selected. Omit to always show.
+  skipSequence Boolean  Optional. true to hide from sequence diagram.
+
+Supported Values for type (Icons)
+
+  Type            Icon                Shape
+  --------------  ------------------  ----------------------------
+  user / human    Person silhouette   Default rectangle
+  service         Stacked layers      Default rectangle
+  database        Cylinder            Bottom rounded
+  agent           Robot / AI          Default rectangle
+  gateway         Globe / network     Rounded (20px radius)
+  firewall        Shield              Double red border
+  lambda          Lambda function     Bottom rounded + orange accent
+  fargate         Container           Default rectangle
+  ec2             Server rack         Default rectangle
+  load-balancer   Balance arrows      Default rectangle
+  cdn             Dashed globe        Dashed rounded
+  cache           Dotted layers       Dotted rounded
+  queue           Item queue          Right pill
+  storage         Drive stack         Thick bottom border
+  dashboard       Grid panels         Top accent bar
+  vpn             Shield + check      Double border
+  default         Generic box         Default rectangle
+
+Supported Values for tag (Colors)
+
+  Tag            Color           Use for
+  -------------  --------------  ----------------------------------------
+  legacy         Red             Systems being deprecated
+  new            Green           New / target-state components
+  core           Blue            Standard infrastructure
+  agent          Purple          AI agents / LLMs
+  external       Gray (dashed)   Users or third-party systems
+  aws            Orange          AWS-managed services
+  internal       Teal            Internal / on-prem services
+  observability  Purple          Monitoring, logging, dashboards
+  data           Cyan            Databases, caches, data stores
+
+
+3. The connections Array
+------------------------
+
+Draws static dashed lines between boxes representing network connectivity
+or data flow paths.
+
+  {
+    "from": "order-svc",
+    "to": "db",
+    "phase": "processing"
+  }
+
+  from   (String)  The id of the source node.
+  to     (String)  The id of the destination node.
+  phase  (String)  Optional. Phase ID — connection only shown when that
+                   phase is selected.
+
+
+4. The sequence Array
+---------------------
+
+Defines the default animation steps. The "Play" button iterates through
+this list in order.
+
+  {
+    "from": "gw",
+    "to": "order-svc",
+    "text": "Forward authorized request",
+    "status": "ready",
+    "phase": "processing",
+    "popUp": { "type": "amplify", "msg": "Order confirmed" }
+  }
+
+  from    (String)  The id of the node where the particle starts.
+  to      (String)  The id of the node where the particle ends.
+                    A step number badge is added to this node on arrival.
+  text    (String)  Description logged in the bottom pane.
+  status  (String)  Optional. "ready" or "wip" — colors the log entry.
+  phase   (String)  Optional. Phase ID — step is skipped when that phase
+                    is not yet selected.
+  popUp   (Object)  Optional. A popup notification on step completion.
+
+  popUp.type (String):
+    "alert"   — Amber/yellow triangle. Use for warnings.
+    "issue"   — Red hexagon. Use for errors or failures.
+    "amplify" — Green circle with checkmark. Use for success.
+
+  popUp.msg (String): The message text displayed in the popup toast.
+
+
+5. The zones Array (Optional)
+-----------------------------
+
+Draws labeled infrastructure boundary boxes behind nodes.
+
+  {
+    "id": "vpc",
+    "type": "vpc",
+    "label": "VPC 10.0.0.0/16",
+    "x": 240,
+    "y": 40,
+    "w": 780,
+    "h": 520,
+    "parent": "cloud",
+    "phase": "skeleton"
+  }
+
+  Property  Type    Description
+  --------  ------  -----------------------------------------------------------
+  id        String  Required. Unique identifier for the zone.
+  type      String  Visual style of the zone (see below).
+  label     String  Text displayed at the top-left of the zone.
+  x         Number  Horizontal position (pixels).
+  y         Number  Vertical position (pixels).
+  w         Number  Width in pixels.
+  h         Number  Height in pixels.
+  parent    String  Optional. ID of the parent zone (for render ordering).
+  phase     String  Optional. Phase ID — zone only appears at that phase.
+
+Supported Zone Types
+
+  Type           Style               Use for
+  -------------  ------------------  ------------------------------------
+  cloud          Blue dashed         Cloud provider boundary
+  on-prem        Gray solid          On-premises datacenter
+  vpc            Green dashed        Virtual private cloud
+  subnet         Green dotted        Subnet within a VPC
+  edge           Yellow dashed       Edge / CDN layer
+  dmz            Red solid           Demilitarized zone
+  region         Subtle blue solid   AWS region
+  az             Subtle blue dashed  Availability zone
+  k8s-cluster    Blue solid          Kubernetes cluster
+  namespace      Blue dashed         Kubernetes namespace
+
+
+6. The phases Array (Optional)
+------------------------------
+
+Defines the progressive reveal layers. When present, a phase slider
+appears in the header. Items tagged with a phase ID only appear when
+the slider reaches that phase.
+
+  "phases": [
+    { "id": "skeleton", "label": "1 — Skeleton" },
+    { "id": "processing", "label": "2 — Processing" },
+    { "id": "observability", "label": "3 — Observability" }
+  ]
+
+  id     (String)  Unique phase identifier, referenced by nodes/zones/
+                   connections/sequence steps via the "phase" field.
+  label  (String)  Display label shown next to the slider.
+
+Visibility Rule:
+  An item is visible when its phase index <= the selected phase index.
+  Items without a "phase" field are always visible.
+
+
+7. The flows Array (Optional)
+-----------------------------
+
+Defines multiple named animation sequences over the same architecture.
+When present, a flow dropdown appears in the header.
+
+  "flows": [
+    {
+      "id": "happy-path",
+      "name": "Happy Path — Place Order",
+      "sequence": [
+        { "from": "user", "to": "gw", "text": "POST /orders", "status": "ready" },
+        { "from": "gw", "to": "svc", "text": "Forward request", "status": "ready" }
+      ]
+    }
+  ]
+
+  id        (String)  Unique flow identifier.
+  name      (String)  Display name shown in the dropdown.
+  sequence  (Array)   Array of step objects (same format as root sequence).
+
+Each flow's sequence is independently filtered by the current phase.
+The root "sequence" array is used when "Default Sequence" is selected.
+
+
+Backward Compatibility
+----------------------
+
+  Missing field     Behavior
+  ----------------  -----------------------------------------------
+  No phases         Phase slider hidden, everything visible
+  No zones          No boundary boxes rendered
+  No flows          Falls back to root sequence
+  No phase on item  Item always visible regardless of selected phase
+  No zone on node   Node floats freely
+
+
+Minimal Example
+---------------
+
+  {
     "title": "Simple Query Flow",
     "nodes": [
-        { 
-            "id": "usr", 
-            "type": "user", 
-            "tag": "external", 
-            "label": "User", 
-            "x": 50, "y": 100, "w": 100, "h": 70 
-        },
-        { 
-            "id": "db", 
-            "type": "database", 
-            "tag": "core", 
-            "label": "SQL DB", 
-            "x": 300, "y": 100, "w": 100, "h": 70 
-        }
+      { "id": "usr", "type": "user", "tag": "external",
+        "label": "User", "x": 50, "y": 100, "w": 100, "h": 70 },
+      { "id": "db", "type": "database", "tag": "core",
+        "label": "SQL DB", "x": 300, "y": 100, "w": 100, "h": 70 }
     ],
     "connections": [
-        { "from": "usr", "to": "db" }
+      { "from": "usr", "to": "db" }
     ],
     "sequence": [
-        { "from": "usr", "to": "db", "text": "Select * from Users" },
-        { "from": "db", "to": "usr", "text": "Return Data" }
+      { "from": "usr", "to": "db", "text": "Select * from Users" },
+      { "from": "db", "to": "usr", "text": "Return Data" }
     ]
-}
+  }

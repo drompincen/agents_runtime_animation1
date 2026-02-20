@@ -10,6 +10,9 @@ Animated, interactive architecture diagrams in the browser. Define nodes, connec
 - **Project Notebook** — freeform notes rendered beside the diagram
 - **PDF Export** — export spatial view, sequence diagram, notes, and logs to PDF
 - **Dark / Light Theme** — toggle with one click
+- **Zones** — infrastructure boundary boxes (VPC, subnet, cloud, on-prem, edge, DMZ, etc.)
+- **Phases** — progressive reveal slider to show architecture layers (skeleton → processing → observability)
+- **Flows** — multiple named animation sequences over the same architecture (happy path, error path, etc.)
 - **Step-through Mode** — pause and advance the animation one step at a time
 - **JSON Dropdown** — auto-discovers `.json` files from the `json/` folder
 
@@ -24,6 +27,7 @@ Animated, interactive architecture diagrams in the browser. Define nodes, connec
 | `iot-sensor-network.json` | Edge sensors with anomaly detection |
 | `microservice-migration.json` | Legacy monolith to microservice migration |
 | `oauth-auth-flow.json` | OAuth2 / OIDC authentication flow |
+| `order-platform.json` | Cloud-native order platform with zones, phases, and flows |
 | `rag-pipeline.json` | Retrieval-Augmented Generation AI pipeline |
 
 ## Prerequisites
@@ -63,7 +67,7 @@ mvn spring-boot:run
 
 # Or build a fat JAR and run it
 mvn package
-java -jar target/archviz-0.1.0.jar
+java -jar target/archviz-0.2.0.jar
 ```
 
 Then open **http://localhost:8080/collab-animation.html**
@@ -100,12 +104,24 @@ Create a `.json` file in `src/main/resources/static/json/` following this struct
 
 ### Node Types (icons)
 
-| Type | Icon |
-|------|------|
-| `user` | Person silhouette |
-| `service` | Stacked layers |
-| `database` | Cylinder |
-| `agent` | Robot / AI |
+| Type | Icon | Shape |
+|------|------|-------|
+| `user` / `human` | Person silhouette | Default rectangle |
+| `service` | Stacked layers | Default rectangle |
+| `database` | Cylinder | Bottom rounded |
+| `agent` | Robot / AI | Default rectangle |
+| `gateway` | Globe/network | Circle |
+| `firewall` | Shield | Double red border |
+| `lambda` | Lambda arrow | Triangle clip-path |
+| `fargate` | Container hex | Default rectangle |
+| `ec2` | Server rack | Default rectangle |
+| `load-balancer` | Balance arrows | Default rectangle |
+| `cdn` | Dashed globe | Dashed circle |
+| `cache` | Dotted layers | Dotted rounded |
+| `queue` | Item queue | Right pill |
+| `storage` | Drive stack | Thick bottom border |
+| `dashboard` | Grid panels | Top accent bar |
+| `vpn` | Shield + check | Double border |
 
 ### Node Tags (colors)
 
@@ -116,6 +132,10 @@ Create a `.json` file in `src/main/resources/static/json/` following this struct
 | `core` | Blue | Standard infrastructure |
 | `agent` | Purple | AI agents / LLMs |
 | `external` | Gray (dashed) | Users or third-party systems |
+| `aws` | Orange | AWS-managed services |
+| `internal` | Teal | Internal / on-prem services |
+| `observability` | Purple | Monitoring, logging, dashboards |
+| `data` | Cyan | Databases, caches, data stores |
 
 ### Optional Node Fields
 
@@ -123,6 +143,107 @@ Create a `.json` file in `src/main/resources/static/json/` following this struct
 |-------|-------------|
 | `status` | `"ready"` (green check) or `"wip"` (orange hourglass) |
 | `skipSequence` | `true` to hide from sequence diagram (e.g. databases) |
+| `phase` | Phase ID — node only appears when that phase is selected |
+
+### Zones (infrastructure boundaries)
+
+Zones draw labeled boundary boxes behind nodes to represent infrastructure groupings. Add a `"zones"` array to your JSON:
+
+```json
+"zones": [
+    { "id": "cloud", "type": "cloud", "label": "AWS Cloud", "x": 200, "y": 10, "w": 800, "h": 500 },
+    { "id": "vpc", "type": "vpc", "label": "VPC", "x": 220, "y": 40, "w": 760, "h": 460, "parent": "cloud" }
+]
+```
+
+| Zone Type | Style | Use for |
+|-----------|-------|---------|
+| `cloud` | Blue dashed | Cloud provider boundary |
+| `on-prem` | Gray solid | On-premises datacenter |
+| `vpc` | Green dashed | Virtual private cloud |
+| `subnet` | Green dotted | Subnet within a VPC |
+| `edge` | Yellow dashed | Edge / CDN layer |
+| `dmz` | Red solid | Demilitarized zone |
+| `region` / `az` | Subtle blue | AWS region or availability zone |
+| `k8s-cluster` | Blue solid | Kubernetes cluster |
+| `namespace` | Blue dashed | Kubernetes namespace |
+
+### Phases (progressive architecture reveal)
+
+Phases let you reveal architecture in layers, like building blueprints — skeleton first, then plumbing, then facade. Add a `"phases"` array and tag items with a `"phase"` field:
+
+```json
+"phases": [
+    { "id": "skeleton", "label": "1 — Skeleton" },
+    { "id": "processing", "label": "2 — Processing" },
+    { "id": "observability", "label": "3 — Observability" }
+]
+```
+
+Then tag nodes, connections, zones, and sequence steps with `"phase": "processing"` etc. Items without a `phase` field are always visible. The slider in the header controls which phase level is shown — all items with a phase index up to the selected one are displayed.
+
+### Flows (named animation sequences)
+
+Flows let you define multiple named animation paths through the same architecture. Add a `"flows"` array:
+
+```json
+"flows": [
+    {
+        "id": "happy-path",
+        "name": "Happy Path — Place Order",
+        "sequence": [
+            { "from": "user", "to": "gw", "text": "POST /orders", "status": "ready" },
+            { "from": "gw", "to": "svc", "text": "Forward request", "status": "ready" }
+        ]
+    },
+    {
+        "id": "error-path",
+        "name": "Payment Failure",
+        "sequence": [...]
+    }
+]
+```
+
+A dropdown appears in the header when flows are present. The root `"sequence"` array is used as the default. Each flow's sequence is independently filtered by the current phase.
+
+## Performing an Architecture Review
+
+ArchViz is designed to support structured architecture reviews where you walk a team through both the **static architecture** and the **dynamic flows**.
+
+### 1. Start with the spatial view (architecture diagram)
+
+Load your diagram and use the **Phase slider** to reveal the architecture layer by layer:
+
+- **Phase 1** — show the core skeleton (API, database, key services)
+- **Phase 2** — add async processing (queues, caches, workers)
+- **Phase 3** — add observability, CDN, admin tooling
+
+At each phase, discuss:
+- What infrastructure boundaries (zones) are in play?
+- Which components are `ready` vs `wip`?
+- Are connections between layers clear?
+
+### 2. Walk through flows (sequence view)
+
+Switch to **Sequence View** and use the **Flow dropdown** to animate each request path:
+
+- **Happy path** — does the ideal flow make sense? Are there unnecessary hops?
+- **Error paths** — what happens on payment failure, timeout, or service unavailability?
+- **Cache/optimization paths** — does the caching strategy cover the right scenarios?
+
+Use **Pause/Step** mode to discuss each step individually. The log pane records every step with timestamps.
+
+### 3. Combine both views
+
+For each flow, toggle between spatial and sequence views:
+- The **spatial view** shows *where* messages travel across infrastructure
+- The **sequence view** shows *when* and *in what order* interactions happen
+
+Both views respect the current phase, so you can review a flow at different maturity levels (e.g., "what does the happy path look like before we add caching?").
+
+### 4. Export for offline review
+
+Use **Export PDF** to capture the current state (respects the active phase) for sharing with stakeholders who can't attend live.
 
 ## Persistence
 
